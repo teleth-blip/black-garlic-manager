@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>黒にんにく管理</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="./config.js"></script>
+</head>
+<body class="login-locked">
+  <section id="setupPanel" class="setup-panel hidden">
+    <div class="login-card">
+      <h1>Supabase設定</h1>
+      <p class="muted">GitHub Pagesで使う前に、SupabaseのURLとanon keyを設定してください。入力値はこの端末だけに保存されます。</p>
+      <label>Supabase URL<input id="setupUrl" type="url" autocomplete="off" placeholder="https://xxxxx.supabase.co"></label>
+      <label>Anon key<input id="setupKey" type="password" autocomplete="off" placeholder="eyJ..."></label>
+      <div class="action-row">
+        <button id="saveSetupBtn" type="button"><i data-lucide="save"></i><span>保存して接続</span></button>
+      </div>
+    </div>
+  </section>
+
+  <section id="loginPanel" class="login-screen">
+    <div class="login-card">
+      <h1>黒にんにく管理</h1>
+      <p class="muted">作業者を選択してください。</p>
+      <label>作業者<select id="loginWorkerSelect"></select></label>
+      <label id="loginPinLabel" class="hidden">PIN<input id="loginPin" type="password" inputmode="numeric" autocomplete="off"></label>
+      <div class="action-row">
+        <button id="loginBtn" type="button"><i data-lucide="log-in"></i><span>開始</span></button>
+      </div>
+      <p id="loginMessage" class="notice"></p>
+    </div>
+  </section>
+
+  <header class="app-header">
+    <div class="header-row">
+      <h1>黒にんにく管理</h1>
+      <div class="worker-bar">
+        <label class="worker-select-label"><span>作業者</span><select id="workerSelect"></select></label>
+        <button id="reloadBtn" type="button" class="secondary header-btn"><i data-lucide="refresh-cw"></i><span>更新</span></button>
+        <button id="logoutBtn" type="button" class="secondary header-btn"><i data-lucide="log-out"></i><span>終了</span></button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <nav class="tabs" aria-label="機能">
+      <button type="button" class="tab active" data-tab="main"><i data-lucide="clipboard-pen-line"></i><span>黒にんにく</span></button>
+      <button type="button" class="tab" data-tab="storage"><i data-lucide="warehouse"></i><span>保管庫</span></button>
+      <button type="button" class="tab" data-tab="summary"><i data-lucide="table-2"></i><span>集計</span></button>
+      <button type="button" class="tab" data-tab="prediction"><i data-lucide="chart-line"></i><span>予測</span></button>
+      <button type="button" class="tab" data-tab="master"><i data-lucide="settings-2"></i><span>マスタ</span></button>
+    </nav>
+
+    <section id="mainPanel" class="panel active-panel" data-panel="main">
+      <div class="section-title">
+        <h2>黒にんにく入力</h2>
+        <span id="mainStatus" class="notice"></span>
+      </div>
+      <form id="mainForm" class="form-grid">
+        <input id="mainEntryId" type="hidden">
+        <label>日付<input id="mainDate" type="date" required></label>
+        <label>種別<select id="mainType" required></select></label>
+        <label>室名<select id="mainRoom" required></select></label>
+        <label>収穫ロット<select id="mainLot" required></select></label>
+        <label>温度<input id="mainTemperature" type="number" step="0.1" inputmode="decimal"></label>
+        <label>出庫<input id="mainOut" type="number" step="0.01" min="0" inputmode="decimal"></label>
+        <label>入庫<input id="mainIn" type="number" step="0.01" min="0" inputmode="decimal"></label>
+        <label>空き<input id="mainEmpty" type="number" step="0.01" min="0" inputmode="decimal"></label>
+        <label>在庫<input id="mainInventory" type="number" step="0.01" min="0" inputmode="decimal" placeholder="空欄なら自動計算"></label>
+        <label class="wide">備考<textarea id="mainNote" rows="2"></textarea></label>
+        <div class="action-row wide">
+          <button type="submit"><i data-lucide="save"></i><span>保存</span></button>
+          <button id="mainClearBtn" type="button" class="secondary"><i data-lucide="eraser"></i><span>入力クリア</span></button>
+          <button id="mainDeleteBtn" type="button" class="danger hidden"><i data-lucide="trash-2"></i><span>削除</span></button>
+        </div>
+      </form>
+
+      <div class="section-title compact">
+        <h2>履歴</h2>
+        <div class="inline-controls">
+          <button id="mainPrevDateBtn" type="button" class="icon-btn secondary" title="前日"><i data-lucide="chevron-left"></i></button>
+          <button id="mainNextDateBtn" type="button" class="icon-btn secondary" title="翌日"><i data-lucide="chevron-right"></i></button>
+        </div>
+      </div>
+      <div id="mainHistory" class="table-wrap"></div>
+    </section>
+
+    <section id="storagePanel" class="panel" data-panel="storage">
+      <div class="section-title">
+        <h2>保管庫入力</h2>
+        <span id="storageStatus" class="notice"></span>
+      </div>
+      <form id="storageForm" class="form-grid">
+        <input id="storageEntryId" type="hidden">
+        <label>日付<input id="storageDate" type="date" required></label>
+        <label>種別<select id="storageType" required></select></label>
+        <label>16段<input id="storageColumns" type="number" step="1" min="0" inputmode="numeric"></label>
+        <label>端数<input id="storagePieces" type="number" step="1" min="0" inputmode="numeric"></label>
+        <label class="wide">備考<textarea id="storageNote" rows="2"></textarea></label>
+        <div class="action-row wide">
+          <button type="submit"><i data-lucide="save"></i><span>保存</span></button>
+          <button id="storageClearBtn" type="button" class="secondary"><i data-lucide="eraser"></i><span>入力クリア</span></button>
+          <button id="storageDeleteBtn" type="button" class="danger hidden"><i data-lucide="trash-2"></i><span>削除</span></button>
+        </div>
+      </form>
+      <div class="section-title compact"><h2>履歴</h2></div>
+      <div id="storageHistory" class="table-wrap"></div>
+    </section>
+
+    <section id="summaryPanel" class="panel" data-panel="summary">
+      <div class="section-title">
+        <h2>集計</h2>
+        <button id="summaryPrintBtn" type="button" class="secondary"><i data-lucide="printer"></i><span>印刷</span></button>
+      </div>
+      <div class="sub-tabs">
+        <button type="button" class="sub-tab active" data-summary-view="daily">日毎</button>
+        <button type="button" class="sub-tab" data-summary-view="weekly">週毎</button>
+        <button type="button" class="sub-tab" data-summary-view="monthly">月毎</button>
+        <button type="button" class="sub-tab" data-summary-view="graph">グラフ</button>
+      </div>
+      <div class="summary-controls">
+        <label>集計基準日<input id="summaryStartDate" type="date"></label>
+        <label>種別<select id="summaryType"></select></label>
+        <label>室名<select id="summaryRoom"></select></label>
+        <button id="summaryRefreshBtn" type="button"><i data-lucide="refresh-cw"></i><span>更新</span></button>
+      </div>
+      <div id="dailySummary" class="summary-view active"></div>
+      <div id="weeklySummary" class="summary-view"></div>
+      <div id="monthlySummary" class="summary-view"></div>
+      <div id="summaryGraph" class="summary-view">
+        <div class="summary-controls graph-controls">
+          <label>開始日<input id="graphStartDate" type="date"></label>
+          <label>終了日<input id="graphEndDate" type="date"></label>
+          <button id="graphRefreshBtn" type="button"><i data-lucide="refresh-cw"></i><span>更新</span></button>
+        </div>
+        <div class="chart-box"><canvas id="summaryChart"></canvas></div>
+      </div>
+    </section>
+
+    <section id="predictionPanel" class="panel" data-panel="prediction">
+      <div class="section-title">
+        <h2>出庫予測</h2>
+        <span class="muted">熟成日数は室名と収穫からの経過日数区分で判定します。</span>
+      </div>
+      <div class="summary-controls">
+        <label>開始日<input id="predictionStartDate" type="date"></label>
+        <label>終了日<input id="predictionEndDate" type="date"></label>
+        <label>種別<select id="predictionType"></select></label>
+        <label>室名<select id="predictionRoom"></select></label>
+        <label>日平均使用列数<input id="avgUsage" type="number" step="0.01" min="0" inputmode="decimal"></label>
+        <button id="predictionRefreshBtn" type="button"><i data-lucide="refresh-cw"></i><span>更新</span></button>
+      </div>
+      <p class="hint">在庫数は16枚で1列、端数は枚数です。出庫予測は出庫数2で1枚、16枚で1列として保管列に換算します。日平均使用列数は日曜日を除いて差し引きます。</p>
+      <div class="sub-tabs">
+        <button type="button" class="sub-tab active" data-prediction-view="table">予測出庫数</button>
+        <button type="button" class="sub-tab" data-prediction-view="chart">出庫予測グラフ</button>
+      </div>
+      <div id="predictionTableView" class="prediction-view active">
+        <div id="predictionTable" class="table-wrap"></div>
+      </div>
+      <div id="predictionChartView" class="prediction-view">
+        <div class="chart-box"><canvas id="predictionChart"></canvas></div>
+      </div>
+    </section>
+
+    <section id="masterPanel" class="panel" data-panel="master">
+      <div class="section-title">
+        <h2>マスタ</h2>
+        <button id="masterSaveBtn" type="button"><i data-lucide="save"></i><span>確定</span></button>
+      </div>
+      <div class="sub-tabs">
+        <button type="button" class="sub-tab active" data-master-view="rooms">室名</button>
+        <button type="button" class="sub-tab" data-master-view="types">室種別</button>
+        <button type="button" class="sub-tab" data-master-view="storageTypes">保管庫種別</button>
+        <button type="button" class="sub-tab" data-master-view="lots">収穫ロット</button>
+        <button type="button" class="sub-tab" data-master-view="maturation">熟成日数表</button>
+      </div>
+      <p class="hint">一覧の変更は「確定」を押すまでSupabaseに反映しません。使用中の室名・種別・保管庫種別は削除できません。</p>
+      <div id="masterRooms" class="master-view active"></div>
+      <div id="masterTypes" class="master-view"></div>
+      <div id="masterStorageTypes" class="master-view"></div>
+      <div id="masterLots" class="master-view"></div>
+      <div id="masterMaturation" class="master-view"></div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="./app.js"></script>
+</body>
+</html>
