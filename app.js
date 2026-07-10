@@ -93,7 +93,6 @@
       loadMainRecordByKey();
     });
     $("mainRoom").addEventListener("change", loadMainRecordByKey);
-    $("mainLot").addEventListener("change", loadMainRecordByKey);
     $("mainPrevDateBtn").addEventListener("click", () => moveDate("mainDate", -1));
     $("mainNextDateBtn").addEventListener("click", () => moveDate("mainDate", 1));
 
@@ -332,7 +331,6 @@
   function fillAllSelects() {
     fillSelect("mainType", activeRows(state.data.types), "id", "type_name");
     fillSelect("mainRoom", activeRows(state.data.rooms), "id", "room_name");
-    fillSelect("mainLot", activeRows(state.data.lots), "id", row => `${row.lot_name} (${fmtDate(row.harvest_date)})`);
     fillSelect("storageType", activeRows(state.data.storageTypes), "id", "type_name");
     fillSelect("summaryType", activeRows(state.data.types), "id", "type_name", "全体");
     fillSelect("summaryRoom", activeRows(state.data.rooms), "id", "room_name", "全体");
@@ -360,6 +358,15 @@
 
   function activeRows(rows) {
     return rows.filter(row => row.active !== false);
+  }
+
+  function getDefaultLotId() {
+    const lots = activeRows(state.data.lots);
+    const lot = lots.find(row => row.lot_name === "未指定") || lots[0] || state.data.lots[0];
+    if (!lot || !lot.id) {
+      throw new Error("既定の収穫ロットがありません。Supabaseの初期データを確認してください。");
+    }
+    return lot.id;
   }
 
   function switchTab(tab) {
@@ -409,7 +416,7 @@
       worker_id: state.workerId,
       room_id: $("mainRoom").value,
       type_id: $("mainType").value,
-      harvest_lot_id: $("mainLot").value,
+      harvest_lot_id: getDefaultLotId(),
       temperature: nullableNumber($("mainTemperature").value),
       out_qty: clampNumber($("mainOut").value),
       in_qty: clampNumber($("mainIn").value),
@@ -490,7 +497,7 @@
       item.entry_date === $("mainDate").value &&
       item.type_id === $("mainType").value &&
       item.room_id === $("mainRoom").value &&
-      item.harvest_lot_id === $("mainLot").value
+      item.harvest_lot_id === getDefaultLotId()
     );
     if (row) loadMainRow(row);
     else clearMainForm();
@@ -501,7 +508,6 @@
     $("mainDate").value = row.entry_date;
     $("mainType").value = row.type_id;
     $("mainRoom").value = row.room_id;
-    $("mainLot").value = row.harvest_lot_id;
     $("mainTemperature").value = row.temperature ?? "";
     $("mainOut").value = row.out_qty ?? "";
     $("mainIn").value = row.in_qty ?? "";
@@ -525,7 +531,6 @@
         <td class="text-left">${esc(workerName(row.worker_id))}</td>
         <td class="text-left">${esc(typeName(row.type_id))}</td>
         <td class="text-left">${esc(roomName(row.room_id))}</td>
-        <td class="text-left">${esc(lotName(row.harvest_lot_id))}</td>
         <td>${num(row.temperature)}</td>
         <td>${num(row.out_qty)}</td>
         <td>${num(row.in_qty)}</td>
@@ -537,8 +542,8 @@
 
     $("mainHistory").innerHTML = `
       <table>
-        <thead><tr><th>日付</th><th>作業者</th><th>種別</th><th>室名</th><th>ロット</th><th>温度</th><th>出庫</th><th>入庫</th><th>空き</th><th>在庫</th><th>備考</th></tr></thead>
-        <tbody>${body || emptyRow(11)}<tr class="total-row"><td colspan="9">合計</td><td>${num(totalInventory)}</td><td></td></tr></tbody>
+        <thead><tr><th>日付</th><th>作業者</th><th>種別</th><th>室名</th><th>温度</th><th>出庫</th><th>入庫</th><th>空き</th><th>在庫</th><th>備考</th></tr></thead>
+        <tbody>${body || emptyRow(10)}<tr class="total-row"><td colspan="8">合計</td><td>${num(totalInventory)}</td><td></td></tr></tbody>
       </table>
     `;
     $("mainHistory").querySelectorAll("[data-main-id]").forEach(tr => {
