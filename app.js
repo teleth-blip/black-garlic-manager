@@ -65,6 +65,7 @@
   function bindEvents() {
     $("saveSetupBtn").addEventListener("click", saveSetup);
     $("loginBtn").addEventListener("click", login);
+    $("editSetupBtn").addEventListener("click", showSetup);
     $("loginWorkerSelect").addEventListener("change", syncPinVisibility);
     $("workerSelect").addEventListener("change", event => {
       state.workerId = event.target.value;
@@ -145,10 +146,25 @@
       throw new Error("Supabaseライブラリを読み込めませんでした。通信環境を確認してください。");
     }
 
-    state.client = window.supabase.createClient(config.url, config.key);
+    try {
+      state.client = window.supabase.createClient(config.url, config.key);
+    } catch (error) {
+      showSetup();
+      throw error;
+    }
     $("setupPanel").classList.add("hidden");
     $("loginPanel").classList.remove("hidden");
     await loadWorkersForLogin();
+  }
+
+  function showSetup() {
+    const config = readConfig();
+    $("setupUrl").value = config.url;
+    $("setupKey").value = config.key;
+    $("setupPanel").classList.remove("hidden");
+    $("loginPanel").classList.add("hidden");
+    document.body.classList.add("login-locked");
+    createIcons();
   }
 
   function readConfig() {
@@ -164,6 +180,10 @@
     const key = $("setupKey").value.trim();
     if (!url || !key) {
       showError(new Error("Supabase URLとanon keyを入力してください。"));
+      return;
+    }
+    if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)) {
+      showError(new Error("Supabase URLは https://xxxxxxxx.supabase.co の形式で入力してください。"));
       return;
     }
     localStorage.setItem(STORAGE_KEYS.url, url);
