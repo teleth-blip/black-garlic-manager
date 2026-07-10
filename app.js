@@ -135,10 +135,12 @@
 
   async function connect() {
     const config = readConfig();
+    if (shouldForceSetup()) {
+      showSetup();
+      return;
+    }
     if (!config.url || !config.key) {
-      $("setupPanel").classList.remove("hidden");
-      $("loginPanel").classList.add("hidden");
-      document.body.classList.add("login-locked");
+      showSetup();
       return;
     }
 
@@ -173,6 +175,11 @@
       url: localStorage.getItem(STORAGE_KEYS.url) || fileConfig.supabaseUrl || "",
       key: localStorage.getItem(STORAGE_KEYS.key) || fileConfig.supabaseAnonKey || ""
     };
+  }
+
+  function shouldForceSetup() {
+    const params = new URLSearchParams(window.location.search);
+    return params.has("setup") || window.location.hash === "#setup";
   }
 
   async function saveSetup() {
