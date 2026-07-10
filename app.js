@@ -85,16 +85,16 @@
     $("mainClearBtn").addEventListener("click", clearMainForm);
     $("mainDeleteBtn").addEventListener("click", () => deleteMainEntry().catch(showError));
     $("mainDate").addEventListener("change", () => {
-      renderMainHistory();
       loadMainRecordByKey();
     });
     $("mainType").addEventListener("change", () => {
-      renderMainHistory();
       loadMainRecordByKey();
     });
     $("mainRoom").addEventListener("change", loadMainRecordByKey);
-    $("mainPrevDateBtn").addEventListener("click", () => moveDate("mainDate", -1));
-    $("mainNextDateBtn").addEventListener("click", () => moveDate("mainDate", 1));
+    $("mainHistoryDate").addEventListener("change", renderMainHistory);
+    $("mainHistoryType").addEventListener("change", renderMainHistory);
+    $("mainPrevDateBtn").addEventListener("click", () => moveDate("mainHistoryDate", -1));
+    $("mainNextDateBtn").addEventListener("click", () => moveDate("mainHistoryDate", 1));
 
     $("storageForm").addEventListener("submit", event => {
       event.preventDefault();
@@ -331,6 +331,7 @@
   function fillAllSelects() {
     fillSelect("mainType", activeRows(state.data.types), "id", "type_name");
     fillSelect("mainRoom", activeRows(state.data.rooms), "id", "room_name");
+    fillSelect("mainHistoryType", activeRows(state.data.types), "id", "type_name", "全体");
     fillSelect("storageType", activeRows(state.data.storageTypes), "id", "type_name");
     fillSelect("summaryType", activeRows(state.data.types), "id", "type_name", "全体");
     fillSelect("summaryRoom", activeRows(state.data.rooms), "id", "room_name", "全体");
@@ -518,10 +519,11 @@
   }
 
   function renderMainHistory() {
-    const date = $("mainDate").value;
-    const typeId = $("mainType").value;
+    const date = $("mainHistoryDate").value;
+    const typeId = $("mainHistoryType").value;
+    $("mainHistoryWeekday").value = weekdayLabel(date);
     const rows = state.data.entries
-      .filter(row => row.entry_date === date && (!typeId || row.type_id === typeId))
+      .filter(row => row.entry_date === date && (typeId === "All" || !typeId || row.type_id === typeId))
       .sort((a, b) => compareDisplay(roomName(a.room_id), roomName(b.room_id)) || compareDisplay(typeName(a.type_id), typeName(b.type_id)));
 
     const totalInventory = rows.reduce((sum, row) => sum + clampNumber(row.inventory_qty), 0);
@@ -1214,6 +1216,7 @@
   function setDefaultDates() {
     const today = todayStr();
     $("mainDate").value = today;
+    $("mainHistoryDate").value = today;
     $("storageDate").value = today;
     $("summaryStartDate").value = today;
     $("summaryStartDate").max = today;
@@ -1376,6 +1379,13 @@
     const d = parseYmd(String(value).slice(0, 10));
     const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
     return `${d.getMonth() + 1}/${d.getDate()}(${weekdays[d.getDay()]})`;
+  }
+
+  function weekdayLabel(value) {
+    if (!value) return "";
+    const d = parseYmd(String(value).slice(0, 10));
+    const weekdays = ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"];
+    return weekdays[d.getDay()];
   }
 
   function fmtShortDate(value) {

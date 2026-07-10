@@ -330,6 +330,10 @@ button svg {
   display: none;
 }
 
+.history-controls {
+  margin-bottom: 10px;
+}
+
 .summary-view.active,
 .prediction-view.active,
 .master-view.active {
