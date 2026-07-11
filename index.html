@@ -131,9 +131,9 @@
         <button type="button" class="sub-tab" data-summary-view="graph">グラフ</button>
       </div>
       <div class="summary-controls">
-        <label>集計基準日<input id="summaryStartDate" type="date"></label>
+        <label>集計開始日<input id="summaryStartDate" type="date"></label>
         <label>種別<select id="summaryType"></select></label>
-        <label>室名<select id="summaryRoom"></select></label>
+        <label id="summaryRoomFilter">室名<select id="summaryRoom"></select></label>
         <button id="summaryRefreshBtn" type="button"><i data-lucide="refresh-cw"></i><span>更新</span></button>
       </div>
       <div id="dailySummary" class="summary-view active"></div>
@@ -196,6 +196,6 @@
   </main>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="./app.js?v=20260711-daily-summary-room"></script>
+  <script src="./app.js?v=20260711-daily-summary-week"></script>
 </body>
 </html>

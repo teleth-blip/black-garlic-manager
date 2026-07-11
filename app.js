@@ -466,6 +466,10 @@
     renderSummary();
   }
 
+  function updateSummaryControls() {
+    $("summaryRoomFilter").classList.toggle("hidden", state.activeSummary === "daily");
+  }
+
   function switchPrediction(view) {
     state.activePrediction = view;
     $$("#predictionPanel .sub-tab").forEach(btn => btn.classList.toggle("active", btn.dataset.predictionView === view));
@@ -767,6 +771,7 @@
   }
 
   function renderSummary() {
+    updateSummaryControls();
     if (state.activeSummary === "daily") renderDailySummary();
     if (state.activeSummary === "weekly") renderWeeklySummary();
     if (state.activeSummary === "monthly") renderMonthlySummary();
@@ -775,20 +780,18 @@
   }
 
   function renderDailySummary() {
-    const ymd = dateToStr(parseYmd($("summaryStartDate").value));
+    const base = parseYmd($("summaryStartDate").value);
     const typeId = $("summaryType").value;
-    const roomId = $("summaryRoom").value;
-    const rooms = roomId === "All" || !roomId
-      ? activeRows(state.data.rooms)
-      : activeRows(state.data.rooms).filter(room => room.id === roomId);
-    const rows = rooms.map(room => {
-      const dayRows = filterEntries(ymd, ymd, typeId, room.id);
+    const days = Array.from({ length: 7 }, (_, index) => addDays(base, -index));
+    const rows = days.map(day => {
+      const ymd = dateToStr(day);
+      const dayRows = filterEntries(ymd, ymd, typeId, "All");
       return [
-        room.room_name,
+        fmtDate(ymd),
         unique(dayRows.map(row => workerName(row.worker_id)).filter(Boolean)).join("、"),
         num(sum(dayRows, "in_qty")),
         num(sum(dayRows, "out_qty")),
-        num(inventoryAsOf(ymd, typeId, room.id)),
+        num(inventoryAsOf(ymd, typeId, "All")),
         num(sum(dayRows, "empty_qty")),
         dayRows.map(row => row.note).filter(Boolean).join(" / ")
       ];
@@ -796,8 +799,8 @@
     const typeLabel = typeId === "All" || !typeId ? "全体" : typeName(typeId);
 
     $("dailySummary").innerHTML = `
-      <h2 class="print-title">${esc(fmtDate(ymd))} 日毎集計（${esc(typeLabel)}）</h2>
-      ${tableHtml(["室名", "作業者名", "搬入数", "搬出数", "在庫", "空き", "備考"], rows, [0, 1, 6])}
+      <h2 class="print-title">${esc(fmtDate(dateToStr(base)))}から過去1週間 日毎集計（${esc(typeLabel)}）</h2>
+      ${tableHtml(["日付", "作業者名", "搬入数", "搬出数", "在庫", "空き", "備考"], rows, [0, 1, 6])}
     `;
   }
 
