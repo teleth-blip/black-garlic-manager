@@ -484,11 +484,11 @@
     $$(".master-view").forEach(el => el.classList.remove("active"));
     const map = {
       rooms: "masterRooms",
-      types: "masterTypes",
       storageTypes: "masterStorageTypes",
       lots: "masterLots",
       maturation: "masterMaturation"
     };
+    if (!map[view]) return;
     $(map[view]).classList.add("active");
     renderMaster();
   }
@@ -1071,8 +1071,7 @@
   }
 
   function renderMaster() {
-    renderSimpleMaster("masterRooms", "rooms", "room_name", "室名");
-    renderSimpleMaster("masterTypes", "types", "type_name", "種別");
+    renderRoomAndTypeMaster();
     renderSimpleMaster("masterStorageTypes", "storageTypes", "type_name", "保管庫種別");
     renderLotMaster();
     renderMaturationMaster();
@@ -1080,21 +1079,31 @@
     createIcons();
   }
 
+  function renderRoomAndTypeMaster() {
+    $("masterRooms").innerHTML = `
+      ${simpleMasterHtml("rooms", "room_name", "室名", true)}
+      ${simpleMasterHtml("types", "type_name", "室種別", true)}
+    `;
+  }
+
   function renderSimpleMaster(containerId, draftKey, nameKey, label) {
+    $(containerId).innerHTML = simpleMasterHtml(draftKey, nameKey, label, false);
+  }
+
+  function simpleMasterHtml(draftKey, nameKey, label, showVisibility) {
     const rows = state.drafts[draftKey] || [];
-    const isRoomMaster = draftKey === "rooms";
-    $(containerId).innerHTML = `
+    return `
       <details class="master-section" open>
         <summary>${esc(label)}マスタ</summary>
         <div class="master-body">
           <div class="master-list">
             ${rows.map((row, index) => `
-              <div class="master-row ${isRoomMaster ? "room-row" : ""}" data-draft="${draftKey}" data-index="${index}">
+              <div class="master-row ${showVisibility ? "visibility-master-row" : ""}" data-draft="${draftKey}" data-index="${index}">
                 <span class="master-index">${index + 1}</span>
                 <input data-field="${nameKey}" value="${esc(row[nameKey] || "")}" placeholder="${esc(label)}">
                 <button type="button" class="secondary icon-btn" data-master-action="up" title="上へ"><i data-lucide="arrow-up"></i></button>
                 <button type="button" class="secondary icon-btn" data-master-action="down" title="下へ"><i data-lucide="arrow-down"></i></button>
-                ${isRoomMaster ? visibilitySwitch(row.active !== false) : ""}
+                ${showVisibility ? visibilitySwitch(row.active !== false) : ""}
                 <button type="button" class="danger icon-btn" data-master-action="remove" title="削除"><i data-lucide="trash-2"></i></button>
               </div>
             `).join("")}

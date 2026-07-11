@@ -572,7 +572,7 @@ tr.clickable:hover {
   background: #fff;
 }
 
-.room-row {
+.visibility-master-row {
   grid-template-columns: 30px minmax(78px, 1fr) 34px 34px 82px 34px;
 }
 
@@ -876,12 +876,12 @@ tr.clickable:hover {
     grid-template-columns: 34px minmax(0, 1fr) auto auto;
   }
 
-  .room-row {
+  .visibility-master-row {
     grid-template-columns: 26px minmax(74px, 1fr) 30px 30px 74px 30px;
     gap: 4px;
   }
 
-  .room-row .icon-btn {
+  .visibility-master-row .icon-btn {
     width: 30px;
     min-width: 30px;
     min-height: 30px;

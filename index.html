@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>黒にんにく管理</title>
-  <link rel="stylesheet" href="./styles.css?v=20260711-master-compact">
+  <link rel="stylesheet" href="./styles.css?v=20260711-master-room-type">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -181,14 +181,12 @@
         <button id="masterSaveBtn" type="button"><i data-lucide="save"></i><span>確定</span></button>
       </div>
       <div class="sub-tabs">
-        <button type="button" class="sub-tab active" data-master-view="rooms">室名</button>
-        <button type="button" class="sub-tab" data-master-view="types">室種別</button>
+        <button type="button" class="sub-tab active" data-master-view="rooms">室名・室種別</button>
         <button type="button" class="sub-tab" data-master-view="storageTypes">保管庫種別</button>
         <button type="button" class="sub-tab" data-master-view="maturation">熟成日数表</button>
       </div>
       <p class="hint">一覧の変更は「確定」を押すまでSupabaseに反映しません。使用中の室名・種別・保管庫種別は削除できません。</p>
       <div id="masterRooms" class="master-view active"></div>
-      <div id="masterTypes" class="master-view"></div>
       <div id="masterStorageTypes" class="master-view"></div>
       <div id="masterLots" class="master-view hidden"></div>
       <div id="masterMaturation" class="master-view"></div>
@@ -196,6 +194,6 @@
   </main>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="./app.js?v=20260711-master-compact"></script>
+  <script src="./app.js?v=20260711-master-room-type"></script>
 </body>
 </html>
