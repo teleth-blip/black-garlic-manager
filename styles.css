@@ -8,6 +8,9 @@
   --brand-dark: #0f4f3f;
   --warn: #b54708;
   --danger: #b42318;
+  --out-color: #d9534f;
+  --in-color: #007bff;
+  --total-bg: #fff4d1;
   --soft: #eef4f0;
   --disabled: #e5e7eb;
   --selected: #f7d56b;
@@ -494,7 +497,17 @@ tr.clickable:hover {
 
 .total-row td {
   font-weight: 800;
-  background: #fafdfb;
+  background: var(--total-bg);
+}
+
+.out-cell {
+  color: var(--out-color);
+  font-weight: 700;
+}
+
+.in-cell {
+  color: var(--in-color);
+  font-weight: 700;
 }
 
 .manual-mark {

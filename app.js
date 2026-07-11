@@ -629,8 +629,8 @@
         <td class="stack-cell">${esc(roomName(row.room_id))}</td>
         <td class="stack-cell">${esc(typeName(row.type_id))}</td>
         <td class="num-cell">${num(row.temperature)}</td>
-        <td class="num-cell">${num(row.out_qty)}</td>
-        <td class="num-cell">${num(row.in_qty)}</td>
+        <td class="num-cell out-cell">${num(row.out_qty)}</td>
+        <td class="num-cell in-cell">${num(row.in_qty)}</td>
         <td class="num-cell">${num(row.empty_qty)}</td>
         <td class="num-cell">${num(row.inventory_qty)}${row.inventory_manual ? '<span class="manual-mark">＊</span>' : ""}</td>
         <td class="note-cell">${esc(row.note || "")}</td>
@@ -653,7 +653,7 @@
           <col class="col-action">
         </colgroup>
         <thead><tr><th class="stack-heading">作業者</th><th class="stack-heading">室</th><th class="stack-heading">種別</th><th>温度</th><th>出庫</th><th>入庫</th><th>空き</th><th>在庫</th><th class="stack-heading">備考</th><th>削除</th></tr></thead>
-        <tbody>${body || emptyRow(10)}<tr class="total-row"><td colspan="4">合計</td><td>${num(totalOut)}</td><td>${num(totalIn)}</td><td>${num(totalEmpty)}</td><td>${num(totalInventory)}</td><td></td><td></td></tr></tbody>
+        <tbody>${body || emptyRow(10)}<tr class="total-row"><td colspan="4">合計</td><td class="out-cell">${num(totalOut)}</td><td class="in-cell">${num(totalIn)}</td><td>${num(totalEmpty)}</td><td>${num(totalInventory)}</td><td></td><td></td></tr></tbody>
       </table>
     `;
     $("mainHistory").querySelectorAll("[data-main-delete]").forEach(button => {
@@ -927,8 +927,8 @@
       data: {
         labels,
         datasets: [
-          { label: "入庫", data: inData, borderColor: "#176b55", backgroundColor: "rgba(23,107,85,.12)", tension: .25, yAxisID: "y" },
-          { label: "出庫", data: outData, borderColor: "#b54708", backgroundColor: "rgba(181,71,8,.12)", tension: .25, yAxisID: "y" },
+          { label: "入庫", data: inData, borderColor: "#007bff", backgroundColor: "rgba(0,123,255,.12)", tension: .25, yAxisID: "y" },
+          { label: "出庫", data: outData, borderColor: "#d9534f", backgroundColor: "rgba(217,83,79,.12)", tension: .25, yAxisID: "y" },
           { label: "在庫", data: inventoryData, borderColor: "#2563eb", backgroundColor: "rgba(37,99,235,.12)", tension: .25, yAxisID: "y1" }
         ]
       },
@@ -1017,8 +1017,8 @@
       data: {
         labels: pred.rows.map(row => fmtShortDate(row.date)),
         datasets: [
-          { type: "bar", label: "予測出庫数", data: pred.rows.map(row => row.pred), backgroundColor: "rgba(23,107,85,.28)", borderColor: "#176b55", yAxisID: "y" },
-          { type: "bar", label: "実出庫数", data: pred.rows.map(row => row.actual), backgroundColor: "rgba(181,71,8,.28)", borderColor: "#b54708", yAxisID: "y" },
+          { type: "bar", label: "予測出庫数", data: pred.rows.map(row => row.pred), backgroundColor: "rgba(217,83,79,.28)", borderColor: "#d9534f", yAxisID: "y" },
+          { type: "bar", label: "実出庫数", data: pred.rows.map(row => row.actual), backgroundColor: "rgba(217,83,79,.28)", borderColor: "#d9534f", yAxisID: "y" },
           { label: "予測保管数", data: pred.rows.map(row => row.forecastStorage), borderColor: "#dc2626", backgroundColor: "rgba(220,38,38,.12)", tension: .25, yAxisID: "y1" }
         ]
       },
@@ -1557,16 +1557,25 @@
   function tableHtml(headers, rows, leftIndexes = [], totalRowIndex = -1) {
     const body = rows.length ? rows.map((row, rowIndex) => {
       const rowClass = rowIndex === totalRowIndex ? ' class="total-row"' : "";
-      return `<tr${rowClass}>${row.map((cell, index) => `<td${leftIndexes.includes(index) ? ' class="text-left"' : ""}>${esc(cell)}</td>`).join("")}</tr>`;
+      return `<tr${rowClass}>${row.map((cell, index) => `<td${tableCellClass(headers, index, leftIndexes)}>${esc(cell)}</td>`).join("")}</tr>`;
     }).join("") : emptyRow(headers.length);
     return `
       <div class="table-wrap">
         <table>
-          <thead><tr>${headers.map(header => `<th${leftIndexes.includes(headers.indexOf(header)) ? ' class="text-left"' : ""}>${esc(header)}</th>`).join("")}</tr></thead>
+          <thead><tr>${headers.map((header, index) => `<th${leftIndexes.includes(index) ? ' class="text-left"' : ""}>${esc(header)}</th>`).join("")}</tr></thead>
           <tbody>${body}</tbody>
         </table>
       </div>
     `;
+  }
+
+  function tableCellClass(headers, index, leftIndexes = []) {
+    const classes = [];
+    const header = String(headers[index] || "");
+    if (leftIndexes.includes(index)) classes.push("text-left");
+    if (header.includes("出庫") || header.includes("搬出")) classes.push("out-cell");
+    if (header.includes("入庫") || header.includes("搬入")) classes.push("in-cell");
+    return classes.length ? ` class="${classes.join(" ")}"` : "";
   }
 
   function fitResponsiveTables(root = document) {
