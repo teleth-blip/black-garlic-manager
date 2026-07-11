@@ -65,7 +65,6 @@
   function bindEvents() {
     $("saveSetupBtn").addEventListener("click", saveSetup);
     $("loginBtn").addEventListener("click", login);
-    $("editSetupBtn").addEventListener("click", showSetup);
     $("loginWorkerSelect").addEventListener("change", syncPinVisibility);
     $("workerSelect").addEventListener("change", event => {
       state.workerId = event.target.value;
@@ -134,7 +133,8 @@
 
   async function connect() {
     const config = readConfig();
-    if (shouldForceSetup()) {
+    const hasFileConfig = hasStaticConfig();
+    if (!hasFileConfig && shouldForceSetup()) {
       showSetup();
       return;
     }
@@ -150,7 +150,7 @@
     try {
       state.client = window.supabase.createClient(config.url, config.key);
     } catch (error) {
-      showSetup();
+      if (!hasFileConfig) showSetup();
       throw error;
     }
     $("setupPanel").classList.add("hidden");
@@ -170,10 +170,17 @@
 
   function readConfig() {
     const fileConfig = window.APP_CONFIG || {};
+    const fileUrl = String(fileConfig.supabaseUrl || "").trim();
+    const fileKey = String(fileConfig.supabaseAnonKey || "").trim();
     return {
-      url: localStorage.getItem(STORAGE_KEYS.url) || fileConfig.supabaseUrl || "",
-      key: localStorage.getItem(STORAGE_KEYS.key) || fileConfig.supabaseAnonKey || ""
+      url: fileUrl || localStorage.getItem(STORAGE_KEYS.url) || "",
+      key: fileKey || localStorage.getItem(STORAGE_KEYS.key) || ""
     };
+  }
+
+  function hasStaticConfig() {
+    const fileConfig = window.APP_CONFIG || {};
+    return !!String(fileConfig.supabaseUrl || "").trim() && !!String(fileConfig.supabaseAnonKey || "").trim();
   }
 
   function shouldForceSetup() {
