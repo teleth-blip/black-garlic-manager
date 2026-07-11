@@ -611,6 +611,9 @@
       .filter(row => row.entry_date === date && (typeId === "All" || !typeId || row.type_id === typeId))
       .sort((a, b) => compareDisplay(roomName(a.room_id), roomName(b.room_id)) || compareDisplay(typeName(a.type_id), typeName(b.type_id)));
 
+    const totalOut = rows.reduce((sum, row) => sum + clampNumber(row.out_qty), 0);
+    const totalIn = rows.reduce((sum, row) => sum + clampNumber(row.in_qty), 0);
+    const totalEmpty = rows.reduce((sum, row) => sum + clampNumber(row.empty_qty), 0);
     const totalInventory = rows.reduce((sum, row) => sum + clampNumber(row.inventory_qty), 0);
     const body = rows.map(row => `
       <tr class="clickable" data-main-id="${esc(row.id)}">
@@ -642,7 +645,7 @@
           <col class="col-action">
         </colgroup>
         <thead><tr><th class="stack-heading">作業者</th><th class="stack-heading">室</th><th class="stack-heading">種別</th><th>温度</th><th>出庫</th><th>入庫</th><th>空き</th><th>在庫</th><th class="stack-heading">備考</th><th>削除</th></tr></thead>
-        <tbody>${body || emptyRow(10)}<tr class="total-row"><td colspan="7">合計</td><td>${num(totalInventory)}</td><td></td><td></td></tr></tbody>
+        <tbody>${body || emptyRow(10)}<tr class="total-row"><td colspan="4">合計</td><td>${num(totalOut)}</td><td>${num(totalIn)}</td><td>${num(totalEmpty)}</td><td>${num(totalInventory)}</td><td></td><td></td></tr></tbody>
       </table>
     `;
     $("mainHistory").querySelectorAll("[data-main-delete]").forEach(button => {
