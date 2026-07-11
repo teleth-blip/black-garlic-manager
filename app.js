@@ -1263,8 +1263,10 @@
 
   async function saveBracketsDraft() {
     const originalIds = new Set(state.data.brackets.map(row => row.id));
+    assertNoDuplicateDraftNames(state.drafts.brackets, "label", "区分名");
     const rows = uniqueDraftRows(state.drafts.brackets, "label").filter(row => row.label).map((row, index) => ({
       ...row,
+      label: String(row.label || "").trim(),
       min_days: Math.max(0, Number(row.min_days || 0)),
       max_days: row.max_days === null || row.max_days === "" ? null : Math.max(0, Number(row.max_days)),
       display_order: index + 1,
@@ -1277,7 +1279,20 @@
         await assertOk(state.client.from(TABLES.brackets).delete().eq("id", id));
       }
     }
-    for (const row of rows) await assertOk(state.client.from(TABLES.brackets).upsert(row));
+    for (const row of rows) {
+      const payload = {
+        label: row.label,
+        min_days: row.min_days,
+        max_days: row.max_days,
+        display_order: row.display_order,
+        active: true
+      };
+      if (row.id) {
+        await assertOk(state.client.from(TABLES.brackets).update(payload).eq("id", row.id));
+      } else {
+        await assertOk(state.client.from(TABLES.brackets).insert(payload));
+      }
+    }
   }
 
   async function saveMaturationRules() {
@@ -1307,6 +1322,16 @@
       result.push({ ...row, [nameKey]: name });
     });
     return result;
+  }
+
+  function assertNoDuplicateDraftNames(rows, nameKey, label) {
+    const seen = new Set();
+    rows.forEach(row => {
+      const name = String(row[nameKey] || "").trim();
+      if (!name) return;
+      if (seen.has(name)) throw new Error(`${label}が重複しています: ${name}`);
+      seen.add(name);
+    });
   }
 
   function isRoomUsed(id) {
