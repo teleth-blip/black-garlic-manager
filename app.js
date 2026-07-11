@@ -787,21 +787,39 @@
     const typeLabel = typeId === "All" || !typeId ? "全体" : typeName(typeId);
     const sections = days.map(day => {
       const ymd = dateToStr(day);
-      const rows = rooms.map(room => {
+      const roomRows = rooms.map(room => {
         const dayRows = filterEntries(ymd, ymd, typeId, room.id);
-        return [
-          room.room_name,
-          unique(dayRows.map(row => workerName(row.worker_id)).filter(Boolean)).join("、"),
-          num(sum(dayRows, "out_qty")),
-          num(sum(dayRows, "in_qty")),
-          num(inventoryAsOf(ymd, typeId, room.id)),
-          num(sum(dayRows, "empty_qty")),
-          dayRows.map(row => row.note).filter(Boolean).join(" / ")
-        ];
+        return {
+          roomName: room.room_name,
+          workers: unique(dayRows.map(row => workerName(row.worker_id)).filter(Boolean)).join("、"),
+          out: sum(dayRows, "out_qty"),
+          inQty: sum(dayRows, "in_qty"),
+          inventory: inventoryAsOf(ymd, typeId, room.id),
+          empty: sum(dayRows, "empty_qty"),
+          note: dayRows.map(row => row.note).filter(Boolean).join(" / ")
+        };
       });
+      const displayRows = roomRows.map(row => [
+        row.roomName,
+        row.workers,
+        num(row.out),
+        num(row.inQty),
+        num(row.inventory),
+        num(row.empty),
+        row.note
+      ]);
+      displayRows.push([
+        "合計",
+        "",
+        num(roomRows.reduce((total, row) => total + row.out, 0)),
+        num(roomRows.reduce((total, row) => total + row.inQty, 0)),
+        num(roomRows.reduce((total, row) => total + row.inventory, 0)),
+        num(roomRows.reduce((total, row) => total + row.empty, 0)),
+        ""
+      ]);
       return `
         <h2 class="print-title">${esc(fmtDate(ymd))} 日毎集計（${esc(typeLabel)}）</h2>
-        ${tableHtml(["室名", "作業者名", "出庫", "入庫", "在庫", "空き", "備考"], rows, [0, 1, 6])}
+        ${tableHtml(["室名", "作業者名", "出庫", "入庫", "在庫", "空き", "備考"], displayRows, [0, 1, 6], displayRows.length - 1)}
       `;
     });
 
@@ -1536,10 +1554,11 @@
     return `<tr><td colspan="${colspan}" class="text-left muted">データがありません。</td></tr>`;
   }
 
-  function tableHtml(headers, rows, leftIndexes = []) {
-    const body = rows.length ? rows.map(row => `
-      <tr>${row.map((cell, index) => `<td${leftIndexes.includes(index) ? ' class="text-left"' : ""}>${esc(cell)}</td>`).join("")}</tr>
-    `).join("") : emptyRow(headers.length);
+  function tableHtml(headers, rows, leftIndexes = [], totalRowIndex = -1) {
+    const body = rows.length ? rows.map((row, rowIndex) => {
+      const rowClass = rowIndex === totalRowIndex ? ' class="total-row"' : "";
+      return `<tr${rowClass}>${row.map((cell, index) => `<td${leftIndexes.includes(index) ? ' class="text-left"' : ""}>${esc(cell)}</td>`).join("")}</tr>`;
+    }).join("") : emptyRow(headers.length);
     return `
       <div class="table-wrap">
         <table>
