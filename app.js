@@ -783,25 +783,29 @@
     const base = parseYmd($("summaryStartDate").value);
     const typeId = $("summaryType").value;
     const days = Array.from({ length: 7 }, (_, index) => addDays(base, -index));
-    const rows = days.map(day => {
-      const ymd = dateToStr(day);
-      const dayRows = filterEntries(ymd, ymd, typeId, "All");
-      return [
-        fmtDate(ymd),
-        unique(dayRows.map(row => workerName(row.worker_id)).filter(Boolean)).join("、"),
-        num(sum(dayRows, "in_qty")),
-        num(sum(dayRows, "out_qty")),
-        num(inventoryAsOf(ymd, typeId, "All")),
-        num(sum(dayRows, "empty_qty")),
-        dayRows.map(row => row.note).filter(Boolean).join(" / ")
-      ];
-    });
+    const rooms = activeRows(state.data.rooms);
     const typeLabel = typeId === "All" || !typeId ? "全体" : typeName(typeId);
+    const sections = days.map(day => {
+      const ymd = dateToStr(day);
+      const rows = rooms.map(room => {
+        const dayRows = filterEntries(ymd, ymd, typeId, room.id);
+        return [
+          room.room_name,
+          unique(dayRows.map(row => workerName(row.worker_id)).filter(Boolean)).join("、"),
+          num(sum(dayRows, "in_qty")),
+          num(sum(dayRows, "out_qty")),
+          num(inventoryAsOf(ymd, typeId, room.id)),
+          num(sum(dayRows, "empty_qty")),
+          dayRows.map(row => row.note).filter(Boolean).join(" / ")
+        ];
+      });
+      return `
+        <h2 class="print-title">${esc(fmtDate(ymd))} 日毎集計（${esc(typeLabel)}）</h2>
+        ${tableHtml(["室名", "作業者名", "搬入数", "搬出数", "在庫", "空き", "備考"], rows, [0, 1, 6])}
+      `;
+    });
 
-    $("dailySummary").innerHTML = `
-      <h2 class="print-title">${esc(fmtDate(dateToStr(base)))}から過去1週間 日毎集計（${esc(typeLabel)}）</h2>
-      ${tableHtml(["日付", "作業者名", "搬入数", "搬出数", "在庫", "空き", "備考"], rows, [0, 1, 6])}
-    `;
+    $("dailySummary").innerHTML = sections.join("");
   }
 
   function renderWeeklySummary() {
