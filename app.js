@@ -4,7 +4,8 @@
   const STORAGE_KEYS = {
     url: "blackGarlicSupabaseUrl",
     key: "blackGarlicSupabaseAnonKey",
-    worker: "blackGarlicWorkerId"
+    worker: "blackGarlicWorkerId",
+    pins: "blackGarlicSavedPins"
   };
 
   const TABLES = {
@@ -65,7 +66,10 @@
   function bindEvents() {
     $("saveSetupBtn").addEventListener("click", saveSetup);
     $("loginBtn").addEventListener("click", login);
-    $("loginWorkerSelect").addEventListener("change", syncPinVisibility);
+    $("loginWorkerSelect").addEventListener("change", () => {
+      $("loginMessage").textContent = "";
+      syncPinVisibility();
+    });
     $("workerSelect").addEventListener("change", event => {
       state.workerId = event.target.value;
       localStorage.setItem(STORAGE_KEYS.worker, state.workerId);
@@ -233,7 +237,11 @@
 
   function syncPinVisibility() {
     const worker = activeWorkers().find(item => item.worker_id === $("loginWorkerSelect").value);
-    $("loginPinLabel").classList.toggle("hidden", !workerPin(worker));
+    const pin = workerPin(worker);
+    const savedPin = worker ? savedWorkerPin(worker.worker_id) : "";
+    const shouldShowPin = !!pin && !savedPin;
+    $("loginPinLabel").classList.toggle("hidden", !shouldShowPin);
+    if (!shouldShowPin) $("loginPin").value = "";
   }
 
   function workerPin(worker) {
@@ -250,13 +258,25 @@
       return;
     }
     const pin = workerPin(worker);
-    if (pin && $("loginPin").value !== pin) {
-      $("loginMessage").textContent = "PINが違います。";
+    const enteredPin = $("loginPin").value.trim();
+    const savedPin = savedWorkerPin(selected);
+    const usablePin = enteredPin || savedPin;
+    if (pin && usablePin !== pin) {
+      if (savedPin && !enteredPin) {
+        removeSavedWorkerPin(selected);
+        syncPinVisibility();
+        $("loginMessage").textContent = "保存済みPINが違います。PINを入力してください。";
+      } else {
+        $("loginMessage").textContent = "PINが違います。";
+      }
       return;
     }
+    if (pin && enteredPin) saveWorkerPin(selected, enteredPin);
     state.workerId = selected;
     localStorage.setItem(STORAGE_KEYS.worker, selected);
     $("workerSelect").value = selected;
+    $("loginPin").value = "";
+    $("loginMessage").textContent = "";
     document.body.classList.remove("login-locked");
     $("loginPanel").classList.add("hidden");
     await refreshAll();
@@ -265,6 +285,34 @@
   function logout() {
     document.body.classList.add("login-locked");
     $("loginPanel").classList.remove("hidden");
+    syncPinVisibility();
+  }
+
+  function savedPins() {
+    try {
+      const pins = JSON.parse(localStorage.getItem(STORAGE_KEYS.pins) || "{}");
+      return pins && typeof pins === "object" ? pins : {};
+    } catch (error) {
+      return {};
+    }
+  }
+
+  function savedWorkerPin(workerId) {
+    const pins = savedPins();
+    return String(pins[workerId] || "");
+  }
+
+  function saveWorkerPin(workerId, pin) {
+    if (!workerId || !pin) return;
+    const pins = savedPins();
+    pins[workerId] = pin;
+    localStorage.setItem(STORAGE_KEYS.pins, JSON.stringify(pins));
+  }
+
+  function removeSavedWorkerPin(workerId) {
+    const pins = savedPins();
+    delete pins[workerId];
+    localStorage.setItem(STORAGE_KEYS.pins, JSON.stringify(pins));
   }
 
   async function refreshAll(message) {
