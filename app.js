@@ -862,6 +862,7 @@
     });
 
     $("weeklySummary").innerHTML = sections.join("") || `<p class="muted">表示対象のデータがありません。</p>`;
+    markSundayDateCells($("weeklySummary"));
   }
 
   function renderMonthlySummary() {
@@ -1576,6 +1577,13 @@
     if (header.includes("出庫") || header.includes("搬出")) classes.push("out-cell");
     if (header.includes("入庫") || header.includes("搬入")) classes.push("in-cell");
     return classes.length ? ` class="${classes.join(" ")}"` : "";
+  }
+
+  function markSundayDateCells(root) {
+    if (!root) return;
+    root.querySelectorAll("tbody tr td:first-child").forEach(cell => {
+      if (cell.textContent.includes("(日)")) cell.classList.add("sun-date");
+    });
   }
 
   function fitResponsiveTables(root = document) {

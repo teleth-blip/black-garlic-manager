@@ -510,6 +510,12 @@ tr.clickable:hover {
   font-weight: 700;
 }
 
+.sun-date {
+  color: var(--out-color);
+  font-weight: 700;
+  background: #fff0f0;
+}
+
 .manual-mark {
   display: inline-block;
   margin-left: 3px;
