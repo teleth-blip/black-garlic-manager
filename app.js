@@ -484,7 +484,6 @@
     $$(".master-view").forEach(el => el.classList.remove("active"));
     const map = {
       rooms: "masterRooms",
-      storageTypes: "masterStorageTypes",
       lots: "masterLots",
       maturation: "masterMaturation"
     };
@@ -1072,7 +1071,6 @@
 
   function renderMaster() {
     renderRoomAndTypeMaster();
-    renderSimpleMaster("masterStorageTypes", "storageTypes", "type_name", "保管庫種別");
     renderLotMaster();
     renderMaturationMaster();
     fitResponsiveTables($("masterPanel"));
@@ -1083,11 +1081,8 @@
     $("masterRooms").innerHTML = `
       ${simpleMasterHtml("rooms", "room_name", "室名", true)}
       ${simpleMasterHtml("types", "type_name", "室種別", true)}
+      ${simpleMasterHtml("storageTypes", "type_name", "保管庫種別", true)}
     `;
-  }
-
-  function renderSimpleMaster(containerId, draftKey, nameKey, label) {
-    $(containerId).innerHTML = simpleMasterHtml(draftKey, nameKey, label, false);
   }
 
   function simpleMasterHtml(draftKey, nameKey, label, showVisibility) {
