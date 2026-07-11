@@ -655,11 +655,10 @@ tr.clickable:hover {
   }
 
   .responsive-fit-table .fit-text-cell {
-    writing-mode: vertical-rl;
-    text-orientation: upright;
+    writing-mode: horizontal-tb;
     white-space: normal;
-    line-height: 1.1;
-    text-align: center;
+    line-height: 1.25;
+    text-align: left;
   }
 
   .responsive-fit-table .fit-action-cell {
@@ -679,11 +678,10 @@ tr.clickable:hover {
 
   .main-history-table .stack-cell,
   .main-history-table .stack-heading {
-    writing-mode: vertical-rl;
-    text-orientation: upright;
+    writing-mode: horizontal-tb;
     white-space: normal;
-    line-height: 1.1;
-    text-align: center;
+    line-height: 1.25;
+    text-align: left;
   }
 
   .main-history-table .note-cell {
