@@ -400,6 +400,7 @@
     renderSummary();
     renderPrediction();
     renderMaster();
+    fitResponsiveTables();
     createIcons();
   }
 
@@ -657,6 +658,7 @@
     $("mainHistory").querySelectorAll("[data-main-id]").forEach(tr => {
       tr.addEventListener("click", () => loadMainRow(state.data.entries.find(row => row.id === tr.dataset.mainId)));
     });
+    fitResponsiveTables($("mainHistory"));
   }
 
   async function saveStorageEntry() {
@@ -750,6 +752,7 @@
     $("storageHistory").querySelectorAll("[data-storage-id]").forEach(tr => {
       tr.addEventListener("click", () => loadStorageRow(state.data.storageEntries.find(row => row.id === tr.dataset.storageId)));
     });
+    fitResponsiveTables($("storageHistory"));
   }
 
   function renderSummary() {
@@ -757,6 +760,7 @@
     if (state.activeSummary === "weekly") renderWeeklySummary();
     if (state.activeSummary === "monthly") renderMonthlySummary();
     if (state.activeSummary === "graph") renderSummaryGraph();
+    fitResponsiveTables($("summaryPanel"));
   }
 
   function renderDailySummary() {
@@ -925,6 +929,7 @@
       [0]
     );
     renderPredictionChart(pred);
+    fitResponsiveTables($("predictionPanel"));
   }
 
   function buildPrediction() {
@@ -1020,6 +1025,7 @@
     renderSimpleMaster("masterStorageTypes", "storageTypes", "type_name", "保管庫種別");
     renderLotMaster();
     renderMaturationMaster();
+    fitResponsiveTables($("masterPanel"));
     createIcons();
   }
 
@@ -1529,6 +1535,31 @@
         </table>
       </div>
     `;
+  }
+
+  function fitResponsiveTables(root = document) {
+    const scope = root && typeof root.querySelectorAll === "function" ? root : document;
+    scope.querySelectorAll("table").forEach(table => {
+      if (!table.closest(".table-wrap")) return;
+      table.classList.add("responsive-fit-table");
+      table.querySelectorAll("th, td").forEach(cell => {
+        cell.classList.remove("fit-number-cell", "fit-text-cell", "fit-action-cell");
+        if (cell.querySelector("button, input, select, textarea")) {
+          cell.classList.add("fit-action-cell");
+          return;
+        }
+        if (cell.classList.contains("num-cell") || isNumericTableText(cell.textContent)) {
+          cell.classList.add("fit-number-cell");
+        } else {
+          cell.classList.add("fit-text-cell");
+        }
+      });
+    });
+  }
+
+  function isNumericTableText(value) {
+    const text = String(value || "").trim();
+    return text === "" || /^[0-9０-９.,+\-/%％:\s]+$/.test(text);
   }
 
   function workerName(id) {

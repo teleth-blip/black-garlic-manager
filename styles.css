@@ -455,6 +455,15 @@ table {
   font-size: 13px;
 }
 
+.responsive-fit-table .fit-number-cell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.responsive-fit-table .fit-action-cell {
+  text-align: center;
+}
+
 th,
 td {
   padding: 7px 8px;
@@ -625,8 +634,37 @@ tr.clickable:hover {
   }
 
   table {
-    min-width: 640px;
-    font-size: 12px;
+    min-width: 0;
+    table-layout: fixed;
+    font-size: 10px;
+  }
+
+  .table-wrap {
+    overflow-x: hidden;
+  }
+
+  th,
+  td {
+    padding: 4px 2px;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .responsive-fit-table .fit-number-cell {
+    white-space: nowrap;
+  }
+
+  .responsive-fit-table .fit-text-cell {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    white-space: normal;
+    line-height: 1.1;
+    text-align: center;
+  }
+
+  .responsive-fit-table .fit-action-cell {
+    writing-mode: horizontal-tb;
+    white-space: normal;
   }
 
   .main-history-table {
@@ -661,6 +699,13 @@ tr.clickable:hover {
   .row-delete-btn svg {
     width: 14px;
     height: 14px;
+  }
+
+  .matrix-table input {
+    width: 100%;
+    min-width: 0;
+    padding: 4px 2px;
+    font-size: 10px;
   }
 
   .master-row,
