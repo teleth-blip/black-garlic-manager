@@ -1082,19 +1082,26 @@
 
   function renderSimpleMaster(containerId, draftKey, nameKey, label) {
     const rows = state.drafts[draftKey] || [];
+    const isRoomMaster = draftKey === "rooms";
     $(containerId).innerHTML = `
-      <div class="master-list">
-        ${rows.map((row, index) => `
-          <div class="master-row" data-draft="${draftKey}" data-index="${index}">
-            <span class="muted">${index + 1}</span>
-            <input data-field="${nameKey}" value="${esc(row[nameKey] || "")}" placeholder="${esc(label)}">
-            <button type="button" class="secondary icon-btn" data-master-action="up" title="上へ"><i data-lucide="arrow-up"></i></button>
-            <button type="button" class="secondary icon-btn" data-master-action="down" title="下へ"><i data-lucide="arrow-down"></i></button>
-            <button type="button" class="danger icon-btn" data-master-action="remove" title="削除"><i data-lucide="trash-2"></i></button>
+      <details class="master-section" open>
+        <summary>${esc(label)}マスタ</summary>
+        <div class="master-body">
+          <div class="master-list">
+            ${rows.map((row, index) => `
+              <div class="master-row ${isRoomMaster ? "room-row" : ""}" data-draft="${draftKey}" data-index="${index}">
+                <span class="master-index">${index + 1}</span>
+                <input data-field="${nameKey}" value="${esc(row[nameKey] || "")}" placeholder="${esc(label)}">
+                <button type="button" class="secondary icon-btn" data-master-action="up" title="上へ"><i data-lucide="arrow-up"></i></button>
+                <button type="button" class="secondary icon-btn" data-master-action="down" title="下へ"><i data-lucide="arrow-down"></i></button>
+                ${isRoomMaster ? visibilitySwitch(row.active !== false) : ""}
+                <button type="button" class="danger icon-btn" data-master-action="remove" title="削除"><i data-lucide="trash-2"></i></button>
+              </div>
+            `).join("")}
+            <button type="button" class="secondary compact-add-btn" data-master-action="add" data-draft="${draftKey}"><i data-lucide="plus"></i><span>${esc(label)}を追加</span></button>
           </div>
-        `).join("")}
-        <button type="button" class="secondary" data-master-action="add" data-draft="${draftKey}"><i data-lucide="plus"></i><span>${esc(label)}を追加</span></button>
-      </div>
+        </div>
+      </details>
     `;
   }
 
@@ -1188,7 +1195,8 @@
       if (!row) return;
       rowEl.querySelectorAll("[data-field]").forEach(input => {
         const field = input.dataset.field;
-        if (input.type === "number") row[field] = input.value === "" ? null : Number(input.value);
+        if (input.type === "checkbox") row[field] = input.checked;
+        else if (input.type === "number") row[field] = input.value === "" ? null : Number(input.value);
         else row[field] = input.value.trim();
       });
     });
@@ -1200,6 +1208,16 @@
     if (draftKey === "rooms") return { room_name: "", active: true };
     if (draftKey === "types" || draftKey === "storageTypes") return { type_name: "", active: true };
     return {};
+  }
+
+  function visibilitySwitch(checked) {
+    return `
+      <label class="visibility-switch" title="表示/非表示">
+        <input data-field="active" type="checkbox" ${checked ? "checked" : ""}>
+        <span class="switch-track"></span>
+        <span class="switch-label-text"></span>
+      </label>
+    `;
   }
 
   async function saveMaster() {
@@ -1223,7 +1241,7 @@
       ...row,
       [nameKey]: String(row[nameKey] || "").trim(),
       display_order: index + 1,
-      active: true
+      active: row.active !== false
     }));
     const keptIds = new Set(rows.filter(row => row.id).map(row => row.id));
     for (const id of originalIds) {
