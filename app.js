@@ -157,7 +157,7 @@
       throw error;
     }
     $("setupPanel").classList.add("hidden");
-    $("loginPanel").classList.remove("hidden");
+    $("loginPanel").classList.add("hidden");
     await loadWorkersForLogin();
   }
 
@@ -215,7 +215,10 @@
       state.workerId = saved;
       $("loginWorkerSelect").value = saved;
       $("workerSelect").value = saved;
+      if (await tryAutoLogin(saved)) return;
     }
+    $("loginPanel").classList.remove("hidden");
+    document.body.classList.add("login-locked");
     syncPinVisibility();
   }
 
@@ -272,20 +275,38 @@
       return;
     }
     if (pin && enteredPin) saveWorkerPin(selected, enteredPin);
-    state.workerId = selected;
-    localStorage.setItem(STORAGE_KEYS.worker, selected);
-    $("workerSelect").value = selected;
-    $("loginPin").value = "";
-    $("loginMessage").textContent = "";
-    document.body.classList.remove("login-locked");
-    $("loginPanel").classList.add("hidden");
-    await refreshAll();
+    await completeLogin(selected);
   }
 
   function logout() {
     document.body.classList.add("login-locked");
     $("loginPanel").classList.remove("hidden");
     syncPinVisibility();
+  }
+
+  async function tryAutoLogin(workerId) {
+    const worker = activeWorkers().find(item => item.worker_id === workerId);
+    if (!worker) return false;
+    const pin = workerPin(worker);
+    const savedPin = savedWorkerPin(workerId);
+    if (pin && savedPin !== pin) {
+      if (savedPin) removeSavedWorkerPin(workerId);
+      return false;
+    }
+    await completeLogin(workerId);
+    return true;
+  }
+
+  async function completeLogin(workerId) {
+    state.workerId = workerId;
+    localStorage.setItem(STORAGE_KEYS.worker, workerId);
+    $("loginWorkerSelect").value = workerId;
+    $("workerSelect").value = workerId;
+    $("loginPin").value = "";
+    $("loginMessage").textContent = "";
+    document.body.classList.remove("login-locked");
+    $("loginPanel").classList.add("hidden");
+    await refreshAll();
   }
 
   function savedPins() {

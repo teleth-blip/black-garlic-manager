@@ -275,6 +275,17 @@ button svg {
   min-width: 0;
 }
 
+.main-form-grid input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.main-form-grid input[type="number"]::-webkit-outer-spin-button,
+.main-form-grid input[type="number"]::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
 .main-form-grid textarea {
   min-height: 40px;
 }
