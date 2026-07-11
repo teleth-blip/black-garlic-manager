@@ -775,36 +775,30 @@
   }
 
   function renderDailySummary() {
-    const base = parseYmd($("summaryStartDate").value);
-    const start = addDays(base, -6);
-    const end = base;
-    const rows = dateRange(start, end).map(date => {
-      const ymd = dateToStr(date);
-      const dayRows = filterEntries(ymd, ymd, $("summaryType").value, $("summaryRoom").value);
-      return {
-        date: ymd,
-        workers: unique(dayRows.map(row => workerName(row.worker_id)).filter(Boolean)).join("、"),
-        out: sum(dayRows, "out_qty"),
-        inQty: sum(dayRows, "in_qty"),
-        empty: sum(dayRows, "empty_qty"),
-        inventory: sum(dayRows, "inventory_qty"),
-        note: dayRows.map(row => row.note).filter(Boolean).join(" / ")
-      };
+    const ymd = dateToStr(parseYmd($("summaryStartDate").value));
+    const typeId = $("summaryType").value;
+    const roomId = $("summaryRoom").value;
+    const rooms = roomId === "All" || !roomId
+      ? activeRows(state.data.rooms)
+      : activeRows(state.data.rooms).filter(room => room.id === roomId);
+    const rows = rooms.map(room => {
+      const dayRows = filterEntries(ymd, ymd, typeId, room.id);
+      return [
+        room.room_name,
+        unique(dayRows.map(row => workerName(row.worker_id)).filter(Boolean)).join("、"),
+        num(sum(dayRows, "in_qty")),
+        num(sum(dayRows, "out_qty")),
+        num(inventoryAsOf(ymd, typeId, room.id)),
+        num(sum(dayRows, "empty_qty")),
+        dayRows.map(row => row.note).filter(Boolean).join(" / ")
+      ];
     });
+    const typeLabel = typeId === "All" || !typeId ? "全体" : typeName(typeId);
 
-    $("dailySummary").innerHTML = tableHtml(
-      ["日付", "作業者名", "搬入数", "搬出数", "在庫", "空き", "備考"],
-      rows.map(row => [
-        fmtDate(row.date),
-        row.workers,
-        num(row.inQty),
-        num(row.out),
-        num(row.inventory),
-        num(row.empty),
-        row.note
-      ]),
-      [0, 1, 6]
-    );
+    $("dailySummary").innerHTML = `
+      <h2 class="print-title">${esc(fmtDate(ymd))} 日毎集計（${esc(typeLabel)}）</h2>
+      ${tableHtml(["室名", "作業者名", "搬入数", "搬出数", "在庫", "空き", "備考"], rows, [0, 1, 6])}
+    `;
   }
 
   function renderWeeklySummary() {
