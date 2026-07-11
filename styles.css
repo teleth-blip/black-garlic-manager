@@ -500,6 +500,30 @@ tr.clickable:hover {
   background: var(--total-bg);
 }
 
+.total-col {
+  font-weight: 800;
+  background: var(--total-bg);
+}
+
+.month-matrix-table th:not(:first-child),
+.month-matrix-table td:not(:first-child) {
+  text-align: center;
+}
+
+.cell-container {
+  display: grid;
+  gap: 2px;
+  line-height: 1.2;
+  min-height: 2.4em;
+  align-content: center;
+}
+
+.cell-upper,
+.cell-lower {
+  min-height: 1.1em;
+  font-variant-numeric: tabular-nums;
+}
+
 .out-cell {
   color: var(--out-color);
   font-weight: 700;

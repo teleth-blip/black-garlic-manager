@@ -869,38 +869,58 @@
     const base = parseYmd($("summaryStartDate").value);
     const start = new Date(base.getFullYear(), base.getMonth(), 1);
     const end = new Date(base.getFullYear(), base.getMonth() + 1, 0);
-    const rows = [];
-    activeRows(state.data.types).forEach(type => {
-      activeRows(state.data.rooms).forEach(room => {
-        const list = filterEntries(dateToStr(start), dateToStr(end), type.id, room.id);
-        if (!list.length) return;
-        rows.push([
-          type.type_name,
-          room.room_name,
-          num(sum(list, "in_qty")),
-          num(sum(list, "out_qty")),
-          num(sum(list, "empty_qty")),
-          num(lastInventory(list))
-        ]);
-      });
-    });
+    const days = dateRange(start, end);
+    const typeId = $("summaryType").value;
+    const roomId = $("summaryRoom").value;
+    const typeLabel = typeId === "All" || !typeId ? "全体" : typeName(typeId);
+    const rooms = roomId === "All" || !roomId
+      ? activeRows(state.data.rooms)
+      : activeRows(state.data.rooms).filter(room => room.id === roomId);
+    const storageTypes = activeRows(state.data.storageTypes);
 
-    const storageRows = activeRows(state.data.storageTypes).map(type => {
-      const list = state.data.storageEntries.filter(row =>
-        row.storage_type_id === type.id &&
-        row.storage_date >= dateToStr(start) &&
-        row.storage_date <= dateToStr(end)
-      );
-      if (!list.length) return null;
-      const last = list.sort((a, b) => compareDisplay(a.storage_date, b.storage_date)).at(-1);
-      return [type.type_name, fmtDate(last.storage_date), num(last.columns16, 0), num(last.pieces, 0), num(storageColumns(last))];
-    }).filter(Boolean);
+    const monthlyRoomRows = days.map(day => {
+      const ymd = dateToStr(day);
+      let outTotal = 0;
+      let inTotal = 0;
+      const cells = rooms.map(room => {
+        const dayRows = filterEntries(ymd, ymd, typeId, room.id);
+        const out = sum(dayRows, "out_qty");
+        const inQty = sum(dayRows, "in_qty");
+        outTotal += out;
+        inTotal += inQty;
+        return twoLineCell(numOrBlank(out), numOrBlank(inQty), "out-cell", "in-cell");
+      });
+      return `<tr>
+        <td class="${day.getDay() === 0 ? "sun-date" : ""}">${esc(fmtDate(ymd))}</td>
+        ${cells.join("")}
+        ${twoLineCell(numOrBlank(outTotal), numOrBlank(inTotal), "out-cell", "in-cell", "total-col")}
+      </tr>`;
+    }).join("");
+
+    const storageRows = days.map(day => {
+      const ymd = dateToStr(day);
+      let columnsTotal = 0;
+      let piecesTotal = 0;
+      const cells = storageTypes.map(type => {
+        const rows = state.data.storageEntries.filter(row => row.storage_date === ymd && row.storage_type_id === type.id);
+        const columns = sum(rows, "columns16");
+        const pieces = sum(rows, "pieces");
+        columnsTotal += columns;
+        piecesTotal += pieces;
+        return twoLineCell(numOrBlank(columns, 0), numOrBlank(pieces, 0));
+      });
+      return `<tr>
+        <td class="${day.getDay() === 0 ? "sun-date" : ""}">${esc(fmtDate(ymd))}</td>
+        ${cells.join("")}
+        ${twoLineCell(numOrBlank(columnsTotal, 0), numOrBlank(piecesTotal, 0), "", "", "total-col")}
+      </tr>`;
+    }).join("");
 
     $("monthlySummary").innerHTML = `
-      <h2 class="print-title">${esc(reiwaMonthLabel(start))} 室別集計</h2>
-      ${tableHtml(["種別", "室名", "搬入数", "搬出数", "空き", "在庫"], rows, [0, 1])}
-      <h2 class="print-title">保管庫集計</h2>
-      ${tableHtml(["種別", "最終日", "16段", "端数", "列換算"], storageRows, [0, 1])}
+      <h2 class="print-title">${esc(reiwaMonthLabel(start))} 月毎室（${esc(typeLabel)} / 上段：出庫 下段：入庫）</h2>
+      ${matrixTableHtml(["日付", ...rooms.map(room => room.room_name), "合計"], monthlyRoomRows)}
+      <h2 class="print-title">保管庫集計（上段：16段 下段：端数）</h2>
+      ${matrixTableHtml(["日付", ...storageTypes.map(type => type.type_name), "合計"], storageRows)}
     `;
   }
 
@@ -1439,6 +1459,10 @@
     return n.toLocaleString("ja-JP", { maximumFractionDigits: digits, minimumFractionDigits: 0 });
   }
 
+  function numOrBlank(value, digits = 2) {
+    return clampNumber(value) === 0 ? "" : num(value, digits);
+  }
+
   function nullableNumber(value) {
     return value === "" || value === null || value === undefined ? null : clampNumber(value);
   }
@@ -1568,6 +1592,24 @@
         </table>
       </div>
     `;
+  }
+
+  function matrixTableHtml(headers, bodyHtml) {
+    return `
+      <div class="table-wrap">
+        <table class="month-matrix-table">
+          <thead><tr>${headers.map((header, index) => `<th${index === headers.length - 1 ? ' class="total-col"' : ""}>${esc(header)}</th>`).join("")}</tr></thead>
+          <tbody>${bodyHtml}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function twoLineCell(upper, lower, upperClass = "", lowerClass = "", tdClass = "") {
+    const tdClassAttr = tdClass ? ` class="${tdClass}"` : "";
+    const upperClassAttr = upperClass ? ` ${upperClass}` : "";
+    const lowerClassAttr = lowerClass ? ` ${lowerClass}` : "";
+    return `<td${tdClassAttr}><div class="cell-container"><div class="cell-upper${upperClassAttr}">${esc(upper)}</div><div class="cell-lower${lowerClassAttr}">${esc(lower)}</div></div></td>`;
   }
 
   function tableCellClass(headers, index, leftIndexes = []) {
