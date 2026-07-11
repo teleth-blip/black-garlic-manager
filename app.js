@@ -440,6 +440,20 @@
     return rows.filter(row => row.active !== false);
   }
 
+  function isActiveMasterRow(rows, id) {
+    const row = rows.find(item => item.id === id);
+    return !!row && row.active !== false;
+  }
+
+  function isVisibleMainEntry(row) {
+    return isActiveMasterRow(state.data.types, row.type_id) &&
+      isActiveMasterRow(state.data.rooms, row.room_id);
+  }
+
+  function isVisibleStorageEntry(row) {
+    return isActiveMasterRow(state.data.storageTypes, row.storage_type_id);
+  }
+
   function getDefaultLotId() {
     const lots = activeRows(state.data.lots);
     const lot = lots.find(row => row.lot_name === "未指定") || lots[0] || state.data.lots[0];
@@ -615,7 +629,7 @@
     const typeId = $("mainHistoryType").value;
     $("mainHistoryWeekday").value = weekdayLabel(date);
     const rows = state.data.entries
-      .filter(row => row.entry_date === date && (typeId === "All" || !typeId || row.type_id === typeId))
+      .filter(row => row.entry_date === date && matchesFilters(row, typeId, "All"))
       .sort((a, b) => compareDisplay(roomName(a.room_id), roomName(b.room_id)) || compareDisplay(typeName(a.type_id), typeName(b.type_id)));
 
     const totalOut = rows.reduce((sum, row) => sum + clampNumber(row.out_qty), 0);
@@ -736,7 +750,7 @@
     const typeId = $("storageHistoryType").value;
     $("storageHistoryWeekday").value = weekdayLabel(date);
     const rows = state.data.storageEntries
-      .filter(row => row.storage_date === date && (typeId === "All" || !typeId || row.storage_type_id === typeId))
+      .filter(row => row.storage_date === date && isVisibleStorageEntry(row) && (typeId === "All" || !typeId || row.storage_type_id === typeId))
       .sort((a, b) => compareDisplay(storageTypeName(a.storage_type_id), storageTypeName(b.storage_type_id)));
     const totalColumns = rows.reduce((sum, row) => sum + storageColumns(row), 0);
     const body = rows.map(row => `
@@ -901,7 +915,7 @@
       let columnsTotal = 0;
       let piecesTotal = 0;
       const cells = storageTypes.map(type => {
-        const rows = state.data.storageEntries.filter(row => row.storage_date === ymd && row.storage_type_id === type.id);
+        const rows = state.data.storageEntries.filter(row => row.storage_date === ymd && isVisibleStorageEntry(row) && row.storage_type_id === type.id);
         const columns = sum(rows, "columns16");
         const pieces = sum(rows, "pieces");
         columnsTotal += columns;
@@ -1088,7 +1102,7 @@
   function simpleMasterHtml(draftKey, nameKey, label, showVisibility) {
     const rows = state.drafts[draftKey] || [];
     return `
-      <details class="master-section" open>
+      <details class="master-section">
         <summary>${esc(label)}マスタ</summary>
         <div class="master-body">
           <div class="master-list">
@@ -1346,7 +1360,8 @@
   }
 
   function matchesFilters(row, typeId, roomId) {
-    return (typeId === "All" || !typeId || row.type_id === typeId) &&
+    return isVisibleMainEntry(row) &&
+      (typeId === "All" || !typeId || row.type_id === typeId) &&
       (roomId === "All" || !roomId || row.room_id === roomId);
   }
 
@@ -1366,8 +1381,10 @@
     const byType = new Map();
     state.data.storageEntries
       .filter(row => row.storage_date <= ymd)
+      .filter(isVisibleStorageEntry)
       .filter(row => {
         if (typeId === "All" || !typeId) return true;
+        if (!isActiveMasterRow(state.data.types, typeId)) return false;
         const mainType = state.data.types.find(type => type.id === typeId);
         const storageType = state.data.storageTypes.find(type => type.id === row.storage_type_id);
         return mainType && storageType && mainType.type_name === storageType.type_name;
