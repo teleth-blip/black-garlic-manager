@@ -82,7 +82,6 @@
       saveMainEntry().catch(showError);
     });
     $("mainClearBtn").addEventListener("click", clearMainForm);
-    $("mainDeleteBtn").addEventListener("click", () => deleteMainEntry().catch(showError));
     $("mainDate").addEventListener("change", () => {
       loadMainRecordByKey();
     });
@@ -477,15 +476,16 @@
     }
   }
 
-  async function deleteMainEntry() {
-    const id = $("mainEntryId").value;
-    if (!id) return;
-    if (!confirm("選択中の黒にんにくデータを削除しますか？")) return;
-    const row = state.data.entries.find(item => item.id === id);
-    await assertOk(state.client.from(TABLES.entries).delete().eq("id", id));
+  async function deleteMainEntry(id) {
+    const targetId = id || $("mainEntryId").value;
+    const isEditingTarget = $("mainEntryId").value === targetId;
+    if (!targetId) return;
+    if (!confirm("この行の黒にんにくデータを削除しますか？")) return;
+    const row = state.data.entries.find(item => item.id === targetId);
+    await assertOk(state.client.from(TABLES.entries).delete().eq("id", targetId));
     if (row) await recalculateInventoryGroup(row.room_id, row.type_id, row.harvest_lot_id);
     await loadAll();
-    clearMainForm();
+    if (isEditingTarget) clearMainForm();
     renderAll();
   }
 
@@ -497,7 +497,7 @@
     $("mainEmpty").value = "";
     $("mainInventory").value = "";
     $("mainNote").value = "";
-    $("mainDeleteBtn").classList.add("hidden");
+    setMainEditMode(false);
   }
 
   function loadMainRecordByKey() {
@@ -512,6 +512,7 @@
   }
 
   function loadMainRow(row) {
+    if (!row) return;
     $("mainEntryId").value = row.id;
     $("mainDate").value = row.entry_date;
     $("mainType").value = row.type_id;
@@ -522,7 +523,15 @@
     $("mainEmpty").value = row.empty_qty ?? "";
     $("mainInventory").value = row.inventory_manual ? row.inventory_qty ?? "" : "";
     $("mainNote").value = row.note || "";
-    $("mainDeleteBtn").classList.remove("hidden");
+    setMainEditMode(true);
+  }
+
+  function setMainEditMode(isEdit) {
+    const button = $("mainSubmitBtn");
+    if (!button) return;
+    const label = button.querySelector("span");
+    if (label) label.textContent = isEdit ? "【編集モード】更新する" : "データ登録";
+    button.classList.toggle("edit-mode", isEdit);
   }
 
   function renderMainHistory() {
@@ -536,25 +545,43 @@
     const totalInventory = rows.reduce((sum, row) => sum + clampNumber(row.inventory_qty), 0);
     const body = rows.map(row => `
       <tr class="clickable" data-main-id="${esc(row.id)}">
-        <td class="text-left">${esc(fmtDate(row.entry_date))}</td>
-        <td class="text-left">${esc(workerName(row.worker_id))}</td>
-        <td class="text-left">${esc(typeName(row.type_id))}</td>
-        <td class="text-left">${esc(roomName(row.room_id))}</td>
-        <td>${num(row.temperature)}</td>
-        <td>${num(row.out_qty)}</td>
-        <td>${num(row.in_qty)}</td>
-        <td>${num(row.empty_qty)}</td>
-        <td>${num(row.inventory_qty)}${row.inventory_manual ? '<span class="manual-mark">＊</span>' : ""}</td>
-        <td class="text-left">${esc(row.note || "")}</td>
+        <td class="stack-cell">${esc(workerName(row.worker_id))}</td>
+        <td class="stack-cell">${esc(roomName(row.room_id))}</td>
+        <td class="stack-cell">${esc(typeName(row.type_id))}</td>
+        <td class="num-cell">${num(row.temperature)}</td>
+        <td class="num-cell">${num(row.out_qty)}</td>
+        <td class="num-cell">${num(row.in_qty)}</td>
+        <td class="num-cell">${num(row.empty_qty)}</td>
+        <td class="num-cell">${num(row.inventory_qty)}${row.inventory_manual ? '<span class="manual-mark">＊</span>' : ""}</td>
+        <td class="note-cell">${esc(row.note || "")}</td>
+        <td class="action-cell"><button type="button" class="danger icon-btn row-delete-btn" data-main-delete="${esc(row.id)}" title="削除"><i data-lucide="trash-2"></i></button></td>
       </tr>
     `).join("");
 
     $("mainHistory").innerHTML = `
-      <table>
-        <thead><tr><th>日付</th><th>作業者</th><th>種別</th><th>室名</th><th>温度</th><th>出庫</th><th>入庫</th><th>空き</th><th>在庫</th><th>備考</th></tr></thead>
-        <tbody>${body || emptyRow(10)}<tr class="total-row"><td colspan="8">合計</td><td>${num(totalInventory)}</td><td></td></tr></tbody>
+      <table class="main-history-table">
+        <colgroup>
+          <col class="col-worker">
+          <col class="col-room">
+          <col class="col-type">
+          <col class="col-number">
+          <col class="col-number">
+          <col class="col-number">
+          <col class="col-number">
+          <col class="col-inventory">
+          <col class="col-note">
+          <col class="col-action">
+        </colgroup>
+        <thead><tr><th class="stack-heading">作業者</th><th class="stack-heading">室</th><th class="stack-heading">種別</th><th>温度</th><th>出庫</th><th>入庫</th><th>空き</th><th>在庫</th><th class="stack-heading">備考</th><th>削除</th></tr></thead>
+        <tbody>${body || emptyRow(10)}<tr class="total-row"><td colspan="7">合計</td><td>${num(totalInventory)}</td><td></td><td></td></tr></tbody>
       </table>
     `;
+    $("mainHistory").querySelectorAll("[data-main-delete]").forEach(button => {
+      button.addEventListener("click", event => {
+        event.stopPropagation();
+        deleteMainEntry(button.dataset.mainDelete).catch(showError);
+      });
+    });
     $("mainHistory").querySelectorAll("[data-main-id]").forEach(tr => {
       tr.addEventListener("click", () => loadMainRow(state.data.entries.find(row => row.id === tr.dataset.mainId)));
     });

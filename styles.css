@@ -230,6 +230,12 @@ button.danger {
   border-color: var(--danger);
 }
 
+button.edit-mode {
+  color: #fff;
+  background: var(--warn);
+  border-color: var(--warn);
+}
+
 button:disabled {
   color: #7b817d;
   background: var(--disabled);
@@ -255,6 +261,22 @@ button svg {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 9px;
   align-items: end;
+}
+
+.main-form-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.main-form-grid label {
+  min-width: 0;
+}
+
+.main-form-grid input[type="date"] {
+  min-width: 0;
+}
+
+.main-form-grid textarea {
+  min-height: 40px;
 }
 
 .wide {
@@ -332,6 +354,73 @@ button svg {
 
 .history-controls {
   margin-bottom: 10px;
+}
+
+.main-history-controls {
+  display: grid;
+  grid-template-columns: minmax(118px, 1.3fr) minmax(56px, .6fr) minmax(82px, 1fr) 38px 38px;
+  gap: 6px;
+  align-items: end;
+}
+
+.main-history-controls label {
+  min-width: 0;
+}
+
+.main-history-controls input,
+.main-history-controls select {
+  min-height: 38px;
+  padding: 7px 8px;
+}
+
+.main-history-controls input[type="date"] {
+  min-width: 0;
+}
+
+.main-history-wrap {
+  overflow-x: hidden;
+}
+
+.main-history-table {
+  min-width: 0;
+  table-layout: fixed;
+  font-size: 12px;
+}
+
+.main-history-table .col-worker { width: 9%; }
+.main-history-table .col-room { width: 7%; }
+.main-history-table .col-type { width: 8%; }
+.main-history-table .col-number { width: 8%; }
+.main-history-table .col-inventory { width: 10%; }
+.main-history-table .col-note { width: 24%; }
+.main-history-table .col-action { width: 10%; }
+
+.main-history-table th,
+.main-history-table td {
+  padding: 5px 4px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.main-history-table .num-cell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.main-history-table .stack-cell,
+.main-history-table .stack-heading,
+.main-history-table .note-cell {
+  text-align: left;
+}
+
+.main-history-table .action-cell {
+  text-align: center;
+}
+
+.row-delete-btn {
+  width: 32px;
+  min-width: 32px;
+  min-height: 32px;
 }
 
 .summary-view.active,
@@ -477,8 +566,47 @@ tr.clickable:hover {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .main-form-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .main-form-grid label {
+    font-size: 11px;
+  }
+
+  .main-form-grid input,
+  .main-form-grid select,
+  .main-form-grid textarea {
+    min-height: 36px;
+    padding: 6px;
+    font-size: 12px;
+  }
+
   .summary-controls button {
     grid-column: 1 / -1;
+  }
+
+  .main-history-controls {
+    grid-template-columns: minmax(104px, 1.2fr) 50px minmax(68px, .85fr) 34px 34px;
+    gap: 4px;
+  }
+
+  .main-history-controls label {
+    font-size: 10px;
+  }
+
+  .main-history-controls input,
+  .main-history-controls select {
+    min-height: 34px;
+    padding: 5px 4px;
+    font-size: 11px;
+  }
+
+  .main-history-controls .icon-btn {
+    width: 34px;
+    min-width: 34px;
+    min-height: 34px;
   }
 
   .panel {
@@ -488,6 +616,40 @@ tr.clickable:hover {
   table {
     min-width: 640px;
     font-size: 12px;
+  }
+
+  .main-history-table {
+    min-width: 0;
+    font-size: 10px;
+  }
+
+  .main-history-table th,
+  .main-history-table td {
+    padding: 4px 2px;
+  }
+
+  .main-history-table .stack-cell,
+  .main-history-table .stack-heading {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    white-space: normal;
+    line-height: 1.1;
+    text-align: center;
+  }
+
+  .main-history-table .note-cell {
+    line-height: 1.25;
+  }
+
+  .row-delete-btn {
+    width: 28px;
+    min-width: 28px;
+    min-height: 30px;
+  }
+
+  .row-delete-btn svg {
+    width: 14px;
+    height: 14px;
   }
 
   .master-row,
