@@ -103,7 +103,6 @@
       saveStorageEntry().catch(showError);
     });
     $("storageClearBtn").addEventListener("click", clearStorageForm);
-    $("storageDeleteBtn").addEventListener("click", () => deleteStorageEntry().catch(showError));
     $("storageDate").addEventListener("change", () => {
       loadStorageRecordByKey();
     });
@@ -693,13 +692,14 @@
     });
   }
 
-  async function deleteStorageEntry() {
-    const id = $("storageEntryId").value;
-    if (!id) return;
-    if (!confirm("選択中の保管庫データを削除しますか？")) return;
-    await assertOk(state.client.from(TABLES.storageEntries).delete().eq("id", id));
+  async function deleteStorageEntry(id) {
+    const targetId = id || $("storageEntryId").value;
+    const isEditingTarget = $("storageEntryId").value === targetId;
+    if (!targetId) return;
+    if (!confirm("この行の保管庫データを削除しますか？")) return;
+    await assertOk(state.client.from(TABLES.storageEntries).delete().eq("id", targetId));
     await loadAll();
-    clearStorageForm();
+    if (isEditingTarget) clearStorageForm();
     renderAll();
   }
 
@@ -708,7 +708,6 @@
     $("storageColumns").value = "";
     $("storagePieces").value = "";
     $("storageNote").value = "";
-    $("storageDeleteBtn").classList.add("hidden");
   }
 
   function loadStorageRecordByKey() {
@@ -727,7 +726,6 @@
     $("storageColumns").value = row.columns16 ?? "";
     $("storagePieces").value = row.pieces ?? "";
     $("storageNote").value = row.note || "";
-    $("storageDeleteBtn").classList.remove("hidden");
   }
 
   function renderStorageHistory() {
@@ -747,14 +745,21 @@
         <td>${num(row.pieces, 0)}</td>
         <td>${num(storageColumns(row))}</td>
         <td class="text-left">${esc(row.note || "")}</td>
+        <td class="action-cell"><button type="button" class="danger icon-btn row-delete-btn" data-storage-delete="${esc(row.id)}" title="削除"><i data-lucide="trash-2"></i></button></td>
       </tr>
     `).join("");
     $("storageHistory").innerHTML = `
       <table>
-        <thead><tr><th>日付</th><th>作業者</th><th>種別</th><th>16段</th><th>端数</th><th>列換算</th><th>備考</th></tr></thead>
-        <tbody>${body || emptyRow(7)}<tr class="total-row"><td colspan="5">合計</td><td>${num(totalColumns)}</td><td></td></tr></tbody>
+        <thead><tr><th>日付</th><th>作業者</th><th>種別</th><th>16段</th><th>端数</th><th>列換算</th><th>備考</th><th>削除</th></tr></thead>
+        <tbody>${body || emptyRow(8)}<tr class="total-row"><td colspan="5">合計</td><td>${num(totalColumns)}</td><td></td><td></td></tr></tbody>
       </table>
     `;
+    $("storageHistory").querySelectorAll("[data-storage-delete]").forEach(button => {
+      button.addEventListener("click", event => {
+        event.stopPropagation();
+        deleteStorageEntry(button.dataset.storageDelete).catch(showError);
+      });
+    });
     $("storageHistory").querySelectorAll("[data-storage-id]").forEach(tr => {
       tr.addEventListener("click", () => loadStorageRow(state.data.storageEntries.find(row => row.id === tr.dataset.storageId)));
     });
