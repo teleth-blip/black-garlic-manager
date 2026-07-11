@@ -105,10 +105,13 @@
     $("storageClearBtn").addEventListener("click", clearStorageForm);
     $("storageDeleteBtn").addEventListener("click", () => deleteStorageEntry().catch(showError));
     $("storageDate").addEventListener("change", () => {
-      renderStorageHistory();
       loadStorageRecordByKey();
     });
     $("storageType").addEventListener("change", loadStorageRecordByKey);
+    $("storageHistoryDate").addEventListener("change", renderStorageHistory);
+    $("storageHistoryType").addEventListener("change", renderStorageHistory);
+    $("storagePrevDateBtn").addEventListener("click", () => moveDate("storageHistoryDate", -1));
+    $("storageNextDateBtn").addEventListener("click", () => moveDate("storageHistoryDate", 1));
 
     $$("#summaryPanel .sub-tab[data-summary-view]").forEach(btn => {
       btn.addEventListener("click", () => switchSummary(btn.dataset.summaryView));
@@ -409,6 +412,7 @@
     fillSelect("mainRoom", activeRows(state.data.rooms), "id", "room_name");
     fillSelect("mainHistoryType", activeRows(state.data.types), "id", "type_name", "全体");
     fillSelect("storageType", activeRows(state.data.storageTypes), "id", "type_name");
+    fillSelect("storageHistoryType", activeRows(state.data.storageTypes), "id", "type_name", "全体");
     fillSelect("summaryType", activeRows(state.data.types), "id", "type_name", "全体");
     fillSelect("summaryRoom", activeRows(state.data.rooms), "id", "room_name", "全体");
     fillSelect("predictionType", activeRows(state.data.types), "id", "type_name", "全体");
@@ -727,9 +731,11 @@
   }
 
   function renderStorageHistory() {
-    const date = $("storageDate").value;
+    const date = $("storageHistoryDate").value;
+    const typeId = $("storageHistoryType").value;
+    $("storageHistoryWeekday").value = weekdayLabel(date);
     const rows = state.data.storageEntries
-      .filter(row => row.storage_date === date)
+      .filter(row => row.storage_date === date && (typeId === "All" || !typeId || row.storage_type_id === typeId))
       .sort((a, b) => compareDisplay(storageTypeName(a.storage_type_id), storageTypeName(b.storage_type_id)));
     const totalColumns = rows.reduce((sum, row) => sum + storageColumns(row), 0);
     const body = rows.map(row => `
@@ -1330,6 +1336,7 @@
     $("mainDate").value = today;
     $("mainHistoryDate").value = today;
     $("storageDate").value = today;
+    $("storageHistoryDate").value = today;
     $("summaryStartDate").value = today;
     $("summaryStartDate").max = today;
     $("graphStartDate").value = dateToStr(addDays(parseYmd(today), -30));
