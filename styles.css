@@ -613,6 +613,13 @@ tr.clickable:hover {
   font-size: 15px;
 }
 
+.master-subtitle {
+  margin: 6px 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 #masterPanel input,
 #masterPanel select {
   min-height: 34px;
@@ -698,14 +705,35 @@ tr.clickable:hover {
 }
 
 .bracket-row {
-  grid-template-columns: 42px minmax(0, 1fr) 92px 92px auto auto auto;
+  grid-template-columns: 30px minmax(88px, 1fr) 74px 74px 34px 34px 34px;
+}
+
+.bracket-row input[type="number"] {
+  min-width: 0;
+  text-align: right;
 }
 
 .matrix-table input {
-  min-width: 88px;
+  width: 100%;
+  min-width: 0;
   min-height: 34px;
   padding: 6px;
   text-align: right;
+}
+
+#masterPanel .matrix-table {
+  min-width: 0;
+  table-layout: fixed;
+}
+
+#masterPanel .matrix-table th,
+#masterPanel .matrix-table td {
+  padding: 4px;
+}
+
+#masterPanel .matrix-table th:first-child,
+#masterPanel .matrix-table td:first-child {
+  width: 72px;
 }
 
 .toast {
@@ -871,9 +899,19 @@ tr.clickable:hover {
   }
 
   .master-row,
-  .lot-row,
-  .bracket-row {
+  .lot-row {
     grid-template-columns: 34px minmax(0, 1fr) auto auto;
+  }
+
+  .bracket-row {
+    grid-template-columns: 26px minmax(62px, 1fr) 50px 50px 30px 30px 30px;
+    gap: 4px;
+  }
+
+  .bracket-row .icon-btn {
+    width: 30px;
+    min-width: 30px;
+    min-height: 30px;
   }
 
   .visibility-master-row {
@@ -906,9 +944,18 @@ tr.clickable:hover {
     transform: translateX(12px);
   }
 
-  .lot-row input[type="date"],
-  .bracket-row input[type="number"] {
+  .lot-row input[type="date"] {
     grid-column: 2 / -1;
+  }
+
+  .bracket-row input {
+    padding: 4px;
+    font-size: 11px;
+  }
+
+  #masterPanel .matrix-table th:first-child,
+  #masterPanel .matrix-table td:first-child {
+    width: 56px;
   }
 }
 

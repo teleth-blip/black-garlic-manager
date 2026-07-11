@@ -27,7 +27,6 @@
     activeTab: "main",
     activeSummary: "daily",
     activePrediction: "table",
-    activeMaster: "rooms",
     data: emptyData(),
     drafts: {},
     charts: {
@@ -129,9 +128,6 @@
       savePredictionSettings().then(renderPrediction).catch(showError);
     });
 
-    $$("#masterPanel .sub-tab[data-master-view]").forEach(btn => {
-      btn.addEventListener("click", () => switchMaster(btn.dataset.masterView));
-    });
     $("masterPanel").addEventListener("click", handleMasterClick);
     $("masterSaveBtn").addEventListener("click", () => saveMaster().catch(showError));
   }
@@ -490,20 +486,6 @@
     $("predictionTableView").classList.toggle("active", view === "table");
     $("predictionChartView").classList.toggle("active", view === "chart");
     renderPrediction();
-  }
-
-  function switchMaster(view) {
-    state.activeMaster = view;
-    $$("#masterPanel .sub-tab").forEach(btn => btn.classList.toggle("active", btn.dataset.masterView === view));
-    $$(".master-view").forEach(el => el.classList.remove("active"));
-    const map = {
-      rooms: "masterRooms",
-      lots: "masterLots",
-      maturation: "masterMaturation"
-    };
-    if (!map[view]) return;
-    $(map[view]).classList.add("active");
-    renderMaster();
   }
 
   async function saveMainEntry() {
@@ -1085,8 +1067,6 @@
 
   function renderMaster() {
     renderRoomAndTypeMaster();
-    renderLotMaster();
-    renderMaturationMaster();
     fitResponsiveTables($("masterPanel"));
     createIcons();
   }
@@ -1096,6 +1076,7 @@
       ${simpleMasterHtml("rooms", "room_name", "室名", true)}
       ${simpleMasterHtml("types", "type_name", "室種別", true)}
       ${simpleMasterHtml("storageTypes", "type_name", "保管庫種別", true)}
+      ${maturationMasterHtml()}
     `;
   }
 
@@ -1123,36 +1104,17 @@
     `;
   }
 
-  function renderLotMaster() {
-    const rows = state.drafts.lots || [];
-    $("masterLots").innerHTML = `
-      <div class="master-list">
-        ${rows.map((row, index) => `
-          <div class="master-row lot-row" data-draft="lots" data-index="${index}">
-            <span class="muted">${index + 1}</span>
-            <input data-field="lot_name" value="${esc(row.lot_name || "")}" placeholder="収穫ロット名">
-            <input data-field="harvest_date" type="date" value="${esc(row.harvest_date || "")}">
-            <button type="button" class="secondary icon-btn" data-master-action="up" title="上へ"><i data-lucide="arrow-up"></i></button>
-            <button type="button" class="secondary icon-btn" data-master-action="down" title="下へ"><i data-lucide="arrow-down"></i></button>
-            <button type="button" class="danger icon-btn" data-master-action="remove" title="削除"><i data-lucide="trash-2"></i></button>
-          </div>
-        `).join("")}
-        <button type="button" class="secondary" data-master-action="add" data-draft="lots"><i data-lucide="plus"></i><span>収穫ロットを追加</span></button>
-      </div>
-    `;
-  }
-
-  function renderMaturationMaster() {
+  function maturationMasterHtml() {
     const brackets = state.drafts.brackets || [];
     const bracketEditor = `
-      <h2>収穫からの経過日数区分</h2>
+      <div class="master-subtitle">収穫からの経過日数区分</div>
       <div class="master-list">
         ${brackets.map((row, index) => `
           <div class="master-row bracket-row" data-draft="brackets" data-index="${index}">
             <span class="muted">${index + 1}</span>
             <input data-field="label" value="${esc(row.label || "")}" placeholder="例: 0-30日">
             <input data-field="min_days" type="number" min="0" step="1" value="${esc(row.min_days ?? "")}" placeholder="開始">
-            <input data-field="max_days" type="number" min="0" step="1" value="${esc(row.max_days ?? "")}" placeholder="終了空欄可">
+            <input data-field="max_days" type="number" min="0" step="1" value="${esc(row.max_days ?? "")}" placeholder="終了">
             <button type="button" class="secondary icon-btn" data-master-action="up" title="上へ"><i data-lucide="arrow-up"></i></button>
             <button type="button" class="secondary icon-btn" data-master-action="down" title="下へ"><i data-lucide="arrow-down"></i></button>
             <button type="button" class="danger icon-btn" data-master-action="remove" title="削除"><i data-lucide="trash-2"></i></button>
@@ -1165,7 +1127,7 @@
     const activeRooms = activeRows(state.data.rooms);
     const activeBrackets = activeRows(state.data.brackets);
     const matrix = `
-      <h2>室名 × 経過日数区分の熟成日数</h2>
+      <div class="master-subtitle">室名 × 経過日数区分の熟成日数</div>
       <div class="table-wrap">
         <table class="matrix-table">
           <thead><tr><th>室名</th>${activeBrackets.map(b => `<th>${esc(b.label)}</th>`).join("")}</tr></thead>
@@ -1184,7 +1146,15 @@
       </div>
     `;
 
-    $("masterMaturation").innerHTML = `${bracketEditor}<div class="section-title compact"></div>${matrix}`;
+    return `
+      <details class="master-section maturation-master-section">
+        <summary>熟成日数表</summary>
+        <div class="master-body">
+          ${bracketEditor}
+          ${matrix}
+        </div>
+      </details>
+    `;
   }
 
   function handleMasterClick(event) {
