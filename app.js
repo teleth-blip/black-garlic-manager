@@ -1263,6 +1263,7 @@
 
   async function saveBracketsDraft() {
     const originalIds = new Set(state.data.brackets.map(row => row.id));
+    const originalById = new Map(state.data.brackets.map(row => [row.id, row]));
     assertNoDuplicateDraftNames(state.drafts.brackets, "label", "区分名");
     const rows = uniqueDraftRows(state.drafts.brackets, "label").filter(row => row.label).map((row, index) => ({
       ...row,
@@ -1279,6 +1280,18 @@
         await assertOk(state.client.from(TABLES.brackets).delete().eq("id", id));
       }
     }
+    const changedExistingRows = rows.filter(row => {
+      const original = row.id ? originalById.get(row.id) : null;
+      return original && original.label !== row.label;
+    });
+    const usedTempLabels = new Set([
+      ...state.data.brackets.map(row => row.label),
+      ...rows.map(row => row.label)
+    ]);
+    for (const row of changedExistingRows) {
+      const temporaryLabel = temporaryBracketLabel(row.id, usedTempLabels);
+      await assertOk(state.client.from(TABLES.brackets).update({ label: temporaryLabel }).eq("id", row.id));
+    }
     for (const row of rows) {
       const payload = {
         label: row.label,
@@ -1292,6 +1305,18 @@
       } else {
         await assertOk(state.client.from(TABLES.brackets).insert(payload));
       }
+    }
+  }
+
+  function temporaryBracketLabel(id, usedLabels) {
+    let index = 0;
+    while (true) {
+      const label = `__tmp_bracket_${Date.now()}_${String(id || "").slice(0, 8)}_${index}__`;
+      if (!usedLabels.has(label)) {
+        usedLabels.add(label);
+        return label;
+      }
+      index += 1;
     }
   }
 
